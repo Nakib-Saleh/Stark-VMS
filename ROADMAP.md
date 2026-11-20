@@ -9,12 +9,17 @@ A phase that is no longer wanted is marked superseded or cancelled, not removed.
 Each phase = one `feature/*` branch → PR into `dev` (ADR-0003). Phases that need a
 decision get an ADR before code. Tests per CLAUDE.md §3 ship inside the phase.
 
+**Execution order (Assignment 1):** 0 → 1 → 2 → 3 → 4 → **7** → 5 → 6 → 8. Numbers are IDs;
+dependencies set the order. Phase 7 only needs 4, so the new UI lands before migrations and
+deploy, and nothing is tested against the starter UI for long.
+
 ## Definition of done (every phase, before its PR merges)
 - Every screen has loading, empty and error states. No blank page, no endless spinner.
 - Server errors (400/409) appear next to the field they belong to, in plain words.
 - Submit buttons are disabled while saving (no double-create). Form input survives a failed save.
 - Destructive actions ask for confirmation.
 - Works at phone width; interactive elements have accessible labels.
+- From Phase 4 on, every screen a phase adds or changes is built to DESIGN.md. After Phase 7 no phase relies on the starter UI.
 - Quality gate green; tests for any auth, access-rule, mutation or delete logic it touches.
 - Public ADR (first-person, humanized) + private note for any decision made; HANDOFF.md updated.
 
@@ -39,12 +44,12 @@ Demo: no
 
 ### Phase 3 — Page response shape · planned
 Depends on: 2
-Delivers: ADR-0002 implemented (Spring Page fields + `hasNext`), API test for all seven fields, API.md updated
+Delivers: ADR-0002 implemented (Spring Page fields + `hasNext`), API test for all seven fields, API.md updated; starter list screen adapted to the new shape so it keeps working until Phase 7
 Demo: no
 
-### Phase 4 — Login (backend + frontend) · planned
+### Phase 4 — Login + new UI foundation (backend + frontend) · planned
 Depends on: 2
-Delivers: ADR on session approach; Spring Security on every endpoint, hashed passwords, seeded user; Flutter login screen built to the design brief, logout, URL-based routing with auth-guarded routes (routing package decided at /plan); tests as unauthenticated user
+Delivers: ADR on session approach; Spring Security on every endpoint, hashed passwords, seeded user; tests as unauthenticated user. Frontend foundation to DESIGN.md: theme tokens and bundled fonts, URL-based routing with auth-guarded routes (routing package decided at /plan), public landing page (`/`, what it is + Sign in + GitHub link, no demo credentials), sign-in screen, app frame (left menu, top bar with user and sign out), not-found page. The starter vehicle screens sit inside the new frame until Phase 7.
 Working assumption (agreed 2026-11-20, confirm in ADR): own auth in Spring Security, no Clerk/Auth0/Supabase Auth (login is a graded skill on a Spring course). Bearer token in the `Authorization` header, not a cookie (Netlify and Render are different domains). Spring Security's built-in JWT support, no extra library. No public sign-up: admin seeded at setup.
 Demo: yes
 
@@ -59,9 +64,9 @@ Delivers: ADR on production DB; Flutter Web on Netlify, API on Render; CORS lock
 Working assumption (agreed 2026-11-20, confirm in ADR): MySQL in production too, on a free managed MySQL host (e.g. Aiven, TiDB Cloud), to keep the local and production databases identical. Re-verify free-tier limits before choosing; Render free Postgres was rejected as it may expire. Handle Render free-tier sleep (slow first request) with a "waking up the server" state in the app and a README note.
 Demo: yes
 
-### Phase 7 — Assignment 1 UI rebuild · planned
-Depends on: 4
-Delivers: full visual redesign to the design brief (made before Phase 1 code; keeps shadcn_ui as the component kit, replaces the starter's look): public landing page (`/`, what it is + Sign in + GitHub link, no demo credentials), app frame with left menu and top bar (user, sign out), vehicle list / add / edit / detail pages each with their own URL, not-found and "server waking up" states, delete the unused counter template. Before/after screenshots in the PR.
+### Phase 7 — Vehicle screens in the new design · planned
+Depends on: 4 (built right after 4, before 5 and 6)
+Delivers: vehicle list (number-plate rows, search, status filter, skeleton loading), register / edit pages with live plate preview and field-level errors (Company field in the form), detail panel, remove-with-confirmation, all to DESIGN.md with their own URLs. Starter screens and the unused counter template deleted. Before/after screenshots in the PR.
 Demo: yes
 
 ### Phase 8 — Assignment 1 release · planned
@@ -134,6 +139,8 @@ Candidates (not committed, become phases only when chosen):
 ## Change log
 
 Newest first. One line per change. This is the "why did that change?" record.
+
+- 2026-11-21 — user worried that leaving all UI to Phase 7 means testing on the old UI and breakage late → UI built as we go: Phase 4 takes the design foundation (theme, fonts, routing, landing, sign-in, app frame), Phase 7 narrowed to vehicle screens and runs right after 4 (order 3 → 4 → 7 → 5 → 6 → 8); Phase 3 keeps the starter list working; definition of done requires new-design screens from Phase 4 on.
 
 - 2026-11-20 — user asked for a rebuilt frontend with landing page and login, "make it our own, not AI slop" → Phase 7 changed from refine to full redesign + landing page + app frame + per-page URLs; Phase 4 adds URL routing; Phase 2 adds Company field; design brief to be written before Phase 1 code. Landing page is our addition, not a course requirement.
 
