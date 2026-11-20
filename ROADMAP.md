@@ -47,7 +47,7 @@ Depends on: 2
 Delivers: ADR-0002 implemented (Spring Page fields + `hasNext`), API test for all seven fields, API.md updated; starter list screen adapted to the new shape so it keeps working until Phase 7
 Demo: no
 
-### Phase 4 — Login + new UI foundation (backend + frontend) · planned
+### Phase 4 — Login + new UI foundation (backend + frontend) · shipped
 Depends on: 2
 Delivers: ADR on session approach; Spring Security on every endpoint, hashed passwords, seeded user; tests as unauthenticated user. Frontend foundation to DESIGN.md: theme tokens and bundled fonts, URL-based routing with auth-guarded routes (routing package decided at /plan), public landing page (`/`, what it is + Sign in + GitHub link, no demo credentials), sign-in screen, app frame (left menu, top bar with user and sign out), not-found page. The starter vehicle screens sit inside the new frame until Phase 7.
 Working assumption (agreed 2026-11-20, confirm in ADR): own auth in Spring Security, no Clerk/Auth0/Supabase Auth (login is a graded skill on a Spring course). Bearer token in the `Authorization` header, not a cookie (Netlify and Render are different domains). Spring Security's built-in JWT support, no extra library. No public sign-up: admin seeded at setup.

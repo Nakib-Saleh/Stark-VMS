@@ -4,7 +4,33 @@ Base URL: `http://localhost:9001/api` locally. JSON in, JSON out. All timestamps
 date-times without zone (`2026-11-21T00:52:51.01384`).
 
 Browsers may only call the API from the origins in `CORS_ALLOWED_ORIGINS` (ADR-0004).
-There is no authentication yet; it arrives in Phase 4 and this file will gain a Login section.
+Every endpoint except sign-in needs `Authorization: Bearer <token>` (ADR-0005). Without a valid
+token the answer is `401` with message "Sign in to continue".
+
+## Sign in
+
+`POST /auth/login` (open)
+
+```json
+{ "username": "admin", "password": "..." }
+```
+
+`200`:
+
+```json
+{ "token": "eyJ...", "expiresAt": "2026-11-21T03:20:56.912Z", "username": "admin" }
+```
+
+The token is valid for 8 hours. Send it on every other request as `Authorization: Bearer <token>`.
+Signing out is done by the client forgetting the token.
+
+| Status | When |
+|---|---|
+| `400` | `username` or `password` missing (`errors.username` / `errors.password`) |
+| `401` | Wrong username or password (same message for both: "That username and password don't match") |
+| `429` | 5 wrong passwords for this username from this address: "Too many failed sign-in attempts. Try again in N minutes." |
+
+`GET /auth/me` → `200` `{ "username": "admin" }` for a valid token.
 
 ## Endpoints
 
@@ -110,6 +136,8 @@ client can show the message next to that field.
 | Status | When |
 |---|---|
 | `400` | Validation failed (one `errors` entry per field), bad `page`/`size`, unreadable JSON |
+| `401` | No token, or a token that is malformed, tampered with or expired: "Sign in to continue" |
 | `403` | Browser call from an origin not in the allowed list (body `Invalid CORS request`) |
 | `404` | No vehicle with that id |
 | `409` | Vehicle number already registered (also when two saves race and the database catches it) |
+| `429` | Sign-in locked for 15 minutes after repeated wrong passwords |

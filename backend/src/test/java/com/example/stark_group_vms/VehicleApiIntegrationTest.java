@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -27,7 +28,8 @@ import org.springframework.test.web.servlet.MockMvc;
  * database itself enforces, not only the service code. Test vehicles use the TEST-IT- prefix
  * and are removed after each test.
  */
-@SpringBootTest
+@SpringBootTest(properties = "app.admin.seed=false")
+@WithMockUser
 @AutoConfigureMockMvc
 class VehicleApiIntegrationTest {
 
