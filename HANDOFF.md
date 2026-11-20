@@ -1,28 +1,54 @@
 # Project State
 
-*Updated: repo restructure (ADR-0001) · Status: green*
+*Updated: Phase 0 (foundation) shipped · Status: green*
 
 ## Completed
-- Restructured into a monorepo: `backend/` (Spring Boot), `frontend/` (Flutter Web), `docs/adr/`. `git init` on `main`, nothing committed yet.
-- ADR-0001 (one repo) written: private note in `.internal/decisions/`, public in `docs/adr/0001-monorepo.md` (reviewed, final, first-person voice).
+- Restructured into a monorepo: `backend/` (Spring Boot), `frontend/` (Flutter Web), `docs/adr/`.
+- Git: `main` = c29e196, untouched starter code + tooling (the baseline to diff against). `dev` = 3bd181c, ADRs 0001–0003. No remote yet. History was rewritten to strip AI attribution trailers; never add them (see memory).
+- ADRs accepted: 0001 monorepo; 0002 page response returns Spring Page fields + `hasNext` (implement in Phase 3); 0003 branching (`main` = submitted/deployed, `dev` = work, `feature/*` PRs into dev, tag `assignment-N` on merge to main, `hotfix/*` off main merged into both).
+- `/stack` done (detect mode): STACK.md, `scripts/quality-checks.sh`, `.github/workflows/ci.yml` (Java 21 + Flutter stable + MySQL 8.4 service), `.claude/settings.json`.
+- Backend gate checks verified against planted failures: 1 compile error = 1 match (regex skips Gradle's indented repeat), 2 failing tests = 2 matches. 9/9 starter tests pass against Docker MySQL.
+- ROADMAP.md written: phases 0–17, definition of done, stretch candidates. Working assumptions: own Spring Security auth with bearer JWT (Phase 4); managed MySQL in production (Phase 6).
+
+- Quality gate fully verified, including `frontend_analyze` (format `  info - msg - lib\file.dart:1:1 - rule`; 3 planted issues counted as 3). Baseline committed: backend_compile 0, backend_test 0, frontend_analyze 8 (all `deprecated_member_use` on `package:flutter/material.dart` imports, deprecated after Flutter 3.47). Lefthook deliberately not installed (user's call); CI is the gate.
+
+## Local environment (Windows, user's machine)
+- JDK 21 (`C:\Program Files\Microsoft\jdk-21.0.13.102-hotspot`) alongside JDK 17; Gradle toolchain picks 21.
+- MySQL 8.4 in Docker container `stark-mysql`, bound to 127.0.0.1:3306, empty root password, volume `stark-mysql-data`. Start with `docker start stark-mysql`. Windows `MySQL80` service stopped + set Manual (it held port 3306; user doesn't use it).
+- Flutter 3.50.1 / Dart 3.14.0 at `C:\dev\flutter` (stable), on the user PATH. The first-run setup once hung on a stalled `git fetch --tags` to GitHub; killing it and re-running fixed it. If Flutter hangs at "Building flutter tool", check for a stuck `git fetch`.
+- User's terminal is Windows PowerShell 5.1: give user-facing commands in PowerShell syntax (no `&&`).
 
 ## Data model — entities and access rules
 - `vehicles` (MySQL, `ddl-auto=update`): no access control yet; no auth exists on backend or frontend.
 
 ## Reusable utilities and components — CHECK BEFORE CREATING ANYTHING NEW
-- Data access / clients: `frontend/lib/network/` (Dio + Retrofit), `frontend/lib/repositories/`
+- Data access / clients: `frontend/lib/network/dio_client.dart`, `frontend/lib/network/vehicle_api.dart` (Retrofit), `frontend/lib/repositories/vehicle_repository.dart`; backend `.../repository/VehicleRepository.java`
 - Auth helpers: none yet
-- State: `frontend/lib/providers/` (Riverpod)
-- UI primitives: `frontend/lib/widgets/` (shadcn_ui)
-- Backend errors: `backend/.../exception/GlobalExceptionHandler.java`
+- State: `frontend/lib/providers/vehicle_providers.dart` (Riverpod)
+- UI primitives: `frontend/lib/widgets/` (shadcn_ui): badges, delete dialog, detail sheet, row card
+- Loading / progress feedback: skeletonizer + infinite_scroll_pagination in `frontend/lib/screens/vehicle_list_screen.dart`
+- Shared helpers: backend errors `.../exception/GlobalExceptionHandler.java`; paging `.../dto/PagedResponse.java`; frontend config `frontend/lib/config/api_config.dart`
+- (`...` = `backend/src/main/java/com/example/stark_group_vms`)
 
 ## Conventions specific to this project
-- Decision records are two-tier: private teaching note in `.internal/decisions/NNNN-*.md` (git-ignored), short public ADR in `docs/adr/NNNN-*.md` run through `humanize-md`, written in the user's first-person voice ("I"), never a third-party voice, committed with the code it governs. Shared numbering.
+- Claude acts as tech lead: plain-language options, pros/cons, recommendation; user approves. Label each decision "engineering call" or "requirements question".
+- Decision records are two-tier: private teaching note in `.internal/decisions/NNNN-*.md` (git-ignored), short public ADR in `docs/adr/NNNN-*.md` run through `humanize-md`, written in the user's first-person voice ("I"), committed with the code it governs. Shared numbering. Next free number: 0004.
+- Quote sources exactly (file:line, who, when) before saying "the spec says". The page-shape spec is Naimul's Discord note (`Guides/DiscordChat.txt:103-112`), not the official course doc.
 - `Guides/` (course material) is git-ignored.
+- Instructor questions sent, no reply yet: one repo vs two; page shape. Proceeding with ADR-0001/0002.
 
 ## Next up
-- User reviews ADR-0001 public copy; then run `/stack` (detect mode: existing codebase, two toolchains).
-- Open review findings to turn into ADRs: pagination contract mismatch (`hasNext` vs spec's Spring Page shape, a requirements question), no login anywhere, entity used as request body, `@CrossOrigin("*")`, unbounded page size, case-sensitive unique constraint, status enum vs Assignment 2, driver fields on vehicle, document storage on Render's temporary disk, MySQL availability on Render.
+1. Run the app once with the user (`docker start stark-mysql`; backend `bootRun`; `flutter run -d chrome`) so they see the starter UI before anything changes.
+2. Push to GitHub: ask the user first (outward-facing). Check CI goes green on the first push.
+3. Start Phase 1 (config from environment) on `feature/env-config` via the DECISIONS gate.
+
+## Starter frontend review findings (2026-11-20, from code; not yet run visually)
+- Search + status filter are client-side over loaded pages only (`frontend/lib/screens/vehicle_list_screen.dart:73-81`); misses unloaded vehicles. Proper fix = server-side search (Phase 11).
+- Status summary counts computed from loaded vehicles only (`vehicle_list_screen.dart:408`), wrong once >1 page. Fix in Phase 7, or hide until Phase 15 dashboard.
+- `frontend/lib/home_page.dart` is the unused Flutter counter template: delete (Phase 7).
+- No Semantics/accessibility labels anywhere (Phase 7).
+- No login screen, though the course videos reference an "existing" one. Requirements question sent: OK to build on the starter vs rebuild from scratch?
 
 ## Known shortcuts deferred
-- none yet
+- `scripts/quality-checks.sh` — no `flutter build web` in BUILD_CMD; add before Phase 6.
+- (resolved) CI Flutter pinned to 3.50.1 to match local.

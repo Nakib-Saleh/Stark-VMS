@@ -4,15 +4,38 @@ on: [push, pull_request]
 jobs:
   gate:
     runs-on: ubuntu-latest
+
+    # The starter's contextLoads test boots the full app, so it needs a real MySQL.
+    # Matches backend/src/main/resources/application.properties (root, empty password, local only).
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+          MYSQL_DATABASE: stark_group_vms
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+
     steps:
       - uses: actions/checkout@v4
 
-      # ── TOOLCHAIN + INSTALL — /stack replaces this block for the chosen stack ──
-      # Node:   - uses: actions/setup-node@v4   (with: node-version: 20, cache: npm)
-      #         - run: npm ci
-      # Python: - uses: actions/setup-python@v5 (with: python-version: '3.12')
-      #         - run: pip install -r requirements.txt
-      # Go:     - uses: actions/setup-go@v5     (with: go-version-file: go.mod)
+      # ── TOOLCHAIN + INSTALL ──
+      - uses: actions/setup-java@v4
+        with:
+          distribution: microsoft
+          java-version: '21'
+          cache: gradle
+      # Pinned to the local SDK (flutter --version, 2026-11-20) so CI and the laptop analyze identically.
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.50.1'
+          cache: true
+      - run: flutter pub get
+        working-directory: frontend
       # ── END TOOLCHAIN BLOCK ──
 
       # Runs BUILD_CMD (if set), then the baseline-aware checks.

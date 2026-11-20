@@ -2,22 +2,132 @@
 
 Phase numbers are permanent IDs. Never renumber. Never delete a phase.
 A phase that is no longer wanted is marked superseded or cancelled, not removed.
+(One-time exception: phases were renumbered on 2026-11-20 before the roadmap was first committed. The rule applies from the first commit on.)
 
 **Status values:** planned · in progress · shipped · superseded by [N] · cancelled
 
+Each phase = one `feature/*` branch → PR into `dev` (ADR-0003). Phases that need a
+decision get an ADR before code. Tests per CLAUDE.md §3 ship inside the phase.
+
+## Definition of done (every phase, before its PR merges)
+- Every screen has loading, empty and error states. No blank page, no endless spinner.
+- Server errors (400/409) appear next to the field they belong to, in plain words.
+- Submit buttons are disabled while saving (no double-create). Form input survives a failed save.
+- Destructive actions ask for confirmation.
+- Works at phone width; interactive elements have accessible labels.
+- Quality gate green; tests for any auth, access-rule, mutation or delete logic it touches.
+- Public ADR (first-person, humanized) + private note for any decision made; HANDOFF.md updated.
+
 ---
 
-## Phases
+## Assignment 1 — rebuild the core VMS (release: tag `assignment-1` on `main`)
 
-### Phase 0 — Foundation · planned
+### Phase 0 — Foundation · shipped
 Depends on: —
-Delivers: project scaffolded on the STACK.md stack, quality gate green, first screen shell (if UI)
+Delivers: monorepo, STACK.md, quality gate verified against real failures, CI, ADRs 0001–0003, this roadmap
+Demo: no
+
+### Phase 1 — Configuration from environment · planned
+Depends on: 0
+Delivers: DB URL/user/password and allowed origins read from env vars with local defaults; `.env.example`; ADR
+Demo: no
+
+### Phase 2 — Harden the vehicle API · planned
+Depends on: 1
+Delivers: request/response DTOs instead of entity, page `size` cap, case-insensitive unique vehicle number at DB level, 400/409 tests
+Demo: no
+
+### Phase 3 — Page response shape · planned
+Depends on: 2
+Delivers: ADR-0002 implemented (Spring Page fields + `hasNext`), API test for all seven fields, API.md updated
+Demo: no
+
+### Phase 4 — Login (backend + frontend) · planned
+Depends on: 2
+Delivers: ADR on session approach; Spring Security on every endpoint, hashed passwords, seeded user; Flutter login screen, logout, auth-guarded routes; tests as unauthenticated user
+Working assumption (agreed 2026-11-20, confirm in ADR): own auth in Spring Security, no Clerk/Auth0/Supabase Auth (login is a graded skill on a Spring course). Bearer token in the `Authorization` header, not a cookie (Netlify and Render are different domains). Spring Security's built-in JWT support, no extra library. No public sign-up: admin seeded at setup.
 Demo: yes
 
-### Phase 1 — [name] · planned
-Depends on: 0
-Delivers: [one line]
+### Phase 5 — Schema migrations · planned
+Depends on: 4
+Delivers: Flyway replaces `ddl-auto=update` (baseline migration for current tables); ADR
 Demo: no
+
+### Phase 6 — Deploy · planned
+Depends on: 5
+Delivers: ADR on production DB; Flutter Web on Netlify, API on Render; CORS locked to the Netlify origin; health-check endpoint; live smoke check
+Working assumption (agreed 2026-11-20, confirm in ADR): MySQL in production too, on a free managed MySQL host (e.g. Aiven, TiDB Cloud), to keep the local and production databases identical. Re-verify free-tier limits before choosing; Render free Postgres was rejected as it may expire. Handle Render free-tier sleep (slow first request) with a "waking up the server" state in the app and a README note.
+Demo: yes
+
+### Phase 7 — Assignment 1 UX pass · planned
+Depends on: 4
+Delivers: `/design-brief` run first to capture the existing shadcn_ui design (refine, don't redesign: keeps "what I added" visible against the starter). Use the app as a fleet manager, list friction points, fix the top ones; login screen matches the existing design.
+Demo: yes
+
+### Phase 8 — Assignment 1 release · planned
+Depends on: 6, 7
+Delivers: end-to-end walkthrough (login → list → add → duplicate rejected → edit → delete), README with live links and ADR index, merge `dev` → `main`, tag `assignment-1`
+Demo: yes
+
+## Assignment 2 — advanced fleet management (release: tag `assignment-2`)
+
+Order follows dependencies: change the vehicle's own shape first, then add things
+that hang off it, then features that read across everything.
+
+### Phase 9 — Vehicle status rework (A2 #5) · planned
+Depends on: 8
+Delivers: ADR reconciling starter statuses (AVAILABLE/IN_USE/MAINTENANCE/INACTIVE) with required ACTIVE/INACTIVE/MAINTENANCE; migration of existing rows; status change UI
+Demo: yes
+
+### Phase 10 — Drivers and assignment (A2 #8, #9) · planned
+Depends on: 9
+Delivers: driver CRUD, assign/change a vehicle's driver, migrate `driverName`/`driverPhone` off vehicles; ADR on the relationship (can a driver have several vehicles?)
+Demo: yes
+
+### Phase 11 — Search, filter, sort (A2 #6, #7) · planned
+Depends on: 10
+Delivers: server-side search by vehicle number and other fields, filter by status/type/driver, sort, paginated; matching list UI
+Demo: yes
+
+### Phase 12 — Maintenance records and history (A2 #3, #4) · planned
+Depends on: 9
+Delivers: record date, type, cost, vendor, notes; per-vehicle history view; maintenance status interplay decided in ADR
+Demo: yes
+
+### Phase 13 — Document upload (A2 #1) · planned
+Depends on: 6
+Delivers: ADR on file storage (Render disk is temporary); upload/download/delete with type and size validation; access-controlled
+Demo: yes
+
+### Phase 14 — Document expiry tracking (A2 #2) · planned
+Depends on: 13
+Delivers: expiry dates, expired / expiring-soon indicators computed server-side; threshold decided in ADR
+Demo: yes
+
+### Phase 15 — Dashboard and summary (A2 #10) · planned
+Depends on: 10, 12, 14
+Delivers: totals (vehicles, active, under maintenance), document expiry and maintenance stats via aggregate queries
+Demo: yes
+
+### Phase 16 — Assignment 2 release · planned
+Depends on: 11, 15
+Delivers: full E2E walkthrough, README update, merge `dev` → `main`, tag `assignment-2`
+Demo: yes
+
+## Stretch (only after 16; pick at most 2–3)
+
+Scored by: usefulness to a real fleet manager × visibility to a judge ÷ effort and risk.
+
+### Phase 17 — Roles: admin vs viewer · planned
+Depends on: 16
+Delivers: server-enforced roles; viewers read-only; tests as each role
+Demo: yes
+
+Candidates (not committed, become phases only when chosen):
+- Activity history: who changed what and when (fleet records get audited)
+- Expiry reminders, in-app and maybe email (builds on Phase 14)
+- Export to CSV (managers live in spreadsheets; cheap)
+- Rejected for now: dark mode, animations (low value for this user)
 
 ---
 
@@ -25,4 +135,6 @@ Demo: no
 
 Newest first. One line per change. This is the "why did that change?" record.
 
-- [date] — [what the client asked for] → added [N, N]; superseded [N]
+- 2026-11-20 — user asked about UI refinement and extensions → added definition of done, Phase 7 (UX pass) before the Assignment 1 release, stretch candidates; renumbered once before first commit (old 7–16 → 8–17)
+- 2026-11-20 — user asked "local management or a service like Supabase/Clerk?" → recorded working assumptions on phases 4 (own Spring auth) and 6 (managed MySQL)
+- 2026-11-20 — initial roadmap from Assignment 1 + 2 requirements and starter-code review → added 0–16. Instructor questions (one repo vs two; page shape) unanswered: proceeding with ADR-0001 and ADR-0002 as decided.
