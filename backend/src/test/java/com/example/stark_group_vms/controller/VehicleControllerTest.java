@@ -1,12 +1,15 @@
 package com.example.stark_group_vms.controller;
 
 import com.example.stark_group_vms.dto.VehicleResponse;
-import com.example.stark_group_vms.entity.Vehicle;
+import com.example.stark_group_vms.dto.VehicleRequest;
 import com.example.stark_group_vms.enums.FuelType;
 import com.example.stark_group_vms.enums.VehicleStatus;
 import com.example.stark_group_vms.enums.VehicleType;
 import com.example.stark_group_vms.exception.DuplicateResourceException;
 import com.example.stark_group_vms.exception.GlobalExceptionHandler;
+import com.example.stark_group_vms.exception.InvalidRequestException;
+import java.sql.SQLIntegrityConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import com.example.stark_group_vms.exception.ResourceNotFoundException;
 import com.example.stark_group_vms.service.VehicleService;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,6 +55,7 @@ class VehicleControllerTest {
                 1L,
                 "DHA-METRO-GA-12-3456",
                 VehicleType.CAR,
+                "Stark Logistics",
                 "Toyota",
                 "Corolla",
                 2023,
@@ -104,7 +108,7 @@ class VehicleControllerTest {
 
     @Test
     void createVehicle_valid_returns201() throws Exception {
-        when(vehicleService.createVehicle(any(Vehicle.class))).thenReturn(sampleVehicleResponse());
+        when(vehicleService.createVehicle(any(VehicleRequest.class))).thenReturn(sampleVehicleResponse());
 
         String payload = """
                 {
@@ -132,7 +136,7 @@ class VehicleControllerTest {
 
     @Test
     void createVehicle_duplicateNumber_returns409() throws Exception {
-        when(vehicleService.createVehicle(any(Vehicle.class)))
+        when(vehicleService.createVehicle(any(VehicleRequest.class)))
                 .thenThrow(new DuplicateResourceException("Vehicle with number 'DHA-METRO-GA-12-3456' already exists"));
 
         String payload = """
@@ -179,6 +183,7 @@ class VehicleControllerTest {
                 1L,
                 "DHA-METRO-GA-12-3456",
                 VehicleType.CAR,
+                "Stark Logistics",
                 "Toyota",
                 "Corolla",
                 2023,
@@ -191,7 +196,7 @@ class VehicleControllerTest {
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
-        when(vehicleService.updateVehicle(eq(1L), any(Vehicle.class))).thenReturn(updated);
+        when(vehicleService.updateVehicle(eq(1L), any(VehicleRequest.class))).thenReturn(updated);
 
         String payload = """
                 {
@@ -217,5 +222,32 @@ class VehicleControllerTest {
 
         mockMvc.perform(delete("/api/vehicles/1"))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void createVehicle_databaseRejectsDuplicate_returns409WithFieldError() throws Exception {
+        // Two saves raced past the service check; MySQL's unique key refused the second.
+        when(vehicleService.createVehicle(any(VehicleRequest.class))).thenThrow(new DataIntegrityViolationException(
+                "could not execute statement",
+                new SQLIntegrityConstraintViolationException("Duplicate entry 'DHA-METRO-GA-12-3456' for key 'vehicles.UK_x'")));
+
+        mockMvc.perform(post("/api/vehicles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"vehicleNumber": "DHA-METRO-GA-12-3456", "vehicleType": "CAR",
+                                 "brand": "Toyota", "model": "Corolla", "fuelType": "HYBRID"}
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.errors.vehicleNumber").value("This vehicle number is already registered"));
+    }
+
+    @Test
+    void getVehicles_sizeOverCap_returns400WithReason() throws Exception {
+        when(vehicleService.getVehicles(0, 101))
+                .thenThrow(new InvalidRequestException("Page size must be between 1 and 100"));
+
+        mockMvc.perform(get("/api/vehicles").param("size", "101"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Page size must be between 1 and 100"));
     }
 }

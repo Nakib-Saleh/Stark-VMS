@@ -21,12 +21,27 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<Map<String, Object>> handleDuplicateResource(DuplicateResourceException ex) {
-        return buildErrorResponse(HttpStatus.CONFLICT, ex.getMessage(), null);
+        Map<String, String> errors = ex.getField() == null ? null : Map.of(ex.getField(), ex.getMessage());
+        return buildErrorResponse(HttpStatus.CONFLICT, ex.getMessage(), errors);
     }
 
+    /**
+     * The database refused a write. The only unique constraint is the vehicle number, so a
+     * duplicate-key error means two saves raced past the service check. Anything else stays generic.
+     */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, Object>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
-        return buildErrorResponse(HttpStatus.CONFLICT, "Duplicate vehicle number or data integrity violation", null);
+        String cause = String.valueOf(ex.getMostSpecificCause().getMessage());
+        if (cause.contains("Duplicate entry")) {
+            String message = "This vehicle number is already registered";
+            return buildErrorResponse(HttpStatus.CONFLICT, message, Map.of("vehicleNumber", message));
+        }
+        return buildErrorResponse(HttpStatus.CONFLICT, "The change conflicts with existing data", null);
+    }
+
+    @ExceptionHandler(InvalidRequestException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidRequest(InvalidRequestException ex) {
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), ex.getFieldErrors());
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)

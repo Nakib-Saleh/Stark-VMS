@@ -1,49 +1,64 @@
-# Walkthrough: Phase 1, configuration from environment
+# Walkthrough: Phase 2, harden the vehicle API
 
-Medium: HTTP client (`curl.exe` in PowerShell) plus the browser for the last step.
-Run from the repo root in PowerShell. Start each step from a stopped backend unless it says otherwise.
+Medium: HTTP client (`curl`) against the real backend on port 9001 with the local Docker MySQL,
+plus one browser check. `[Claude]` steps are run by Claude and marked ✅/❌ with evidence.
+`[You]` steps need a person in the app; Claude leaves the backend and `flutter run` going for them.
+(Phase 1's walkthrough is in git history: commit 3eb5060.)
 
-## Defaults (no environment variables set)
+## Reading the list
 
-1. `docker start stark-mysql`, then `cd backend; .\gradlew.bat bootRun`.
-   **Expect:** log ends with `Started StarkGroupVmsApplication` on port 9001. No env vars were needed.
-2. `curl.exe -i http://localhost:9001/api/vehicles?page=0"&"size=2`
-   **Expect:** `200`, JSON with two vehicles. Same data as before this phase.
-3. Allowed origin preflight:
-   `curl.exe -i -X OPTIONS http://localhost:9001/api/vehicles -H "Origin: http://localhost:8686" -H "Access-Control-Request-Method: GET"`
-   **Expect:** `200` and header `Access-Control-Allow-Origin: http://localhost:8686`.
-4. Any other localhost port is also allowed locally (Flutter picks a random port):
-   repeat step 3 with `Origin: http://localhost:53771`.
-   **Expect:** `200`, `Access-Control-Allow-Origin: http://localhost:53771`.
-5. A foreign site is refused (tested as the unauthorised caller):
-   repeat step 3 with `Origin: https://evil.example`.
-   **Expect:** `403`, body `Invalid CORS request`, **no** `Access-Control-Allow-Origin` header.
-6. Same foreign origin on a real request:
-   `curl.exe -i http://localhost:9001/api/vehicles -H "Origin: https://evil.example"`
-   **Expect:** `403`, no vehicle data.
+1. [Claude] `GET /api/vehicles?page=0&size=10`
+   **Expect:** `200`; every item has a `company` key (null for rows created before this phase).
+   ✅ 200, 10 items, every item has `company` (null on pre-Phase-2 rows).
+2. [Claude] `GET /api/vehicles?size=100` → `200`. `GET /api/vehicles?size=101` and `?size=0`
+   **Expect:** `400`, `message` says the page size must be between 1 and 100.
+   ✅ size=100 → 200; size=101 and size=0 → 400 "Page size must be between 1 and 100".
+3. [Claude] `GET /api/vehicles?page=-1`
+   **Expect:** `400`, `message` says the page number can't be negative (not the old generic "Invalid request payload").
+   ✅ 400 "Page number can't be negative".
 
-## Overrides (environment variables win)
+## Creating
 
-7. Stop the backend. `$env:CORS_ALLOWED_ORIGINS = "https://stark-vms.netlify.app"`, then `bootRun` again.
-   Repeat step 3 with `Origin: https://stark-vms.netlify.app`.
-   **Expect:** `200` with that origin echoed back.
-8. Still with that variable set, repeat step 3 with `Origin: http://localhost:8686`.
-   **Expect:** `403`. Setting the variable replaces the local default; it does not add to it.
-9. Stop. `Remove-Item Env:CORS_ALLOWED_ORIGINS; $env:DB_PASSWORD = "wrong-on-purpose"`, then `bootRun`.
-   **Expect:** startup fails with `Access denied for user 'root'` in the log. Proves the password comes from the environment.
-   The log must **not** print the password value.
-10. `Remove-Item Env:DB_PASSWORD`, `bootRun` again. **Expect:** starts normally (back to defaults).
+4. [Claude] `POST /api/vehicles` with a valid body, `company: "Stark Logistics"` and vehicle number `"  dha-metro-ga-11-1234 "`
+   **Expect:** `201`; stored and returned as `DHA-METRO-GA-11-1234` (trimmed, upper case); `company` echoed back.
+   ✅ 201, stored as `DHA-METRO-GA-11-1234`, company "Stark Logistics".
+5. [Claude] `POST` again with `"Dha-Metro-Ga-11-1234"`
+   **Expect:** `409`; `errors.vehicleNumber` explains the number is already registered.
+   ✅ 409, errors.vehicleNumber = "DHA-METRO-GA-11-1234 is already registered".
+6. [Claude] `POST` a new vehicle that also sends `id: 999`, `createdAt: "2000-01-01T00:00:00"`
+   **Expect:** `201`; `id` is a new server id (not 999) and `createdAt` is now. Client can't set server fields.
+   ✅ 201, id 27 (not 999), createdAt 2026-11-21T00:52:51.
+7. [Claude] `POST` with brand missing, `manufacturingYear: 1800`, `seatingCapacity: 0`, a 300-character model
+   **Expect:** `400`; `errors` has one plain-English message each for `brand`, `manufacturingYear`, `seatingCapacity`, `model`.
+   ✅ 400 with messages for brand, model, manufacturingYear, seatingCapacity.
 
-## Nothing secret in the repo
+## Updating
 
-11. Open `backend/src/main/resources/application.properties`.
-    **Expect:** every datasource and CORS value is a `${NAME:default}` placeholder; the only defaults are localhost values and an empty local password.
-12. `.env.example` at the repo root lists every variable with a one-line purpose and no real values.
+8. [Claude] `PUT` another vehicle to `dha-metro-ga-11-1234`
+   **Expect:** `409` with `errors.vehicleNumber`.
+   ✅ 409, errors.vehicleNumber set.
+9. [Claude] `PUT` the step-4 vehicle with its own number in lower case and a new colour
+   **Expect:** `200`; colour changed, number still `DHA-METRO-GA-11-1234` (editing doesn't trip over itself).
+   ✅ 200, colour "Midnight Blue", number unchanged.
 
-## The app still works end to end
+## The database enforces it, not only the code
 
-13. With the backend running (step 1, no env vars set), in a second terminal: `cd frontend; flutter run -d chrome` (random port, no extra flags).
-    ✅ 2026-11-21, confirmed by the developer: vehicle list loads in Chrome.
-    If the backend is not running, Dio reports a "connection error" that mentions CORS; that wording is Dio's generic guess, not a CORS refusal.
-    **Expect:** vehicle list loads with data. DevTools Network tab shows `/api/vehicles` with status 200 and no CORS error in the console.
-14. Push the branch. **Expect:** CI green (backend tests run against the CI MySQL service using the defaults).
+10. [Claude] Insert `dha-metro-ga-11-1234` straight into MySQL, bypassing the API (`docker exec stark-mysql mysql ... INSERT ...`)
+    **Expect:** MySQL refuses: `Duplicate entry`. Proves uniqueness holds even if the code check is skipped or two saves race.
+    ✅ MySQL: ERROR 1062 Duplicate entry 'dha-metro-ga-11-1234' for key 'vehicles.UKpy3agdr9g5molxe2mj30p9i8i'.
+11. [Claude] Automated test that saves a lower-case duplicate through the repository (skipping the service check)
+    **Expect:** rejected by the database; and the API turns that rejection into `409`, not `500`.
+    ✅ VehicleApiIntegrationTest.databaseRejectsCaseVariantDuplicateEvenWithoutTheServiceCheck + VehicleControllerTest.createVehicle_databaseRejectsDuplicate_returns409WithFieldError pass.
+
+## Cleanup and gate
+
+12. [Claude] `DELETE` the vehicles created above → `204`; `GET` one of them → `404`.
+   ✅ DELETE 204 ×2; GET after delete 404.
+13. [Claude] Backend tests all pass locally; CI green on the pushed branch.
+   ✅ local: 23/23 tests pass (7 new integration, 2 new controller). CI: checked after push.
+
+## In the app
+
+14. [You] Claude leaves the backend and the app running. In the app click **Add Vehicle**, type the number of a vehicle already in the list but in lower case (for example `dha-metro-ga-11-1001`), fill the rest, press save.
+    **Expect:** the form shows an "already registered" error and keeps what you typed. Change the number to something new, save: the vehicle appears at the top of the list in upper case.
+    ✅ 2026-11-21, confirmed by the developer.
