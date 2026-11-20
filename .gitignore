@@ -1,0 +1,21 @@
+# Root ignores. backend/ and frontend/ keep their own .gitignore for toolchain files.
+
+# Private decision notes (teaching versions); public ADRs live in docs/adr/
+.internal/
+
+# Course material, not ours to redistribute
+Guides/
+
+# OS junk
+.DS_Store
+._*
+__MACOSX/
+Thumbs.db
+
+# Local secrets
+.env
+.env.*
+!.env.example
+
+# Claude Code per-machine settings
+.claude/settings.local.json

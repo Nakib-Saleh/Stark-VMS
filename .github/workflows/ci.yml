@@ -1,0 +1,19 @@
+name: quality
+on: [push, pull_request]
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── TOOLCHAIN + INSTALL — /stack replaces this block for the chosen stack ──
+      # Node:   - uses: actions/setup-node@v4   (with: node-version: 20, cache: npm)
+      #         - run: npm ci
+      # Python: - uses: actions/setup-python@v5 (with: python-version: '3.12')
+      #         - run: pip install -r requirements.txt
+      # Go:     - uses: actions/setup-go@v5     (with: go-version-file: go.mod)
+      # ── END TOOLCHAIN BLOCK ──
+
+      # Runs BUILD_CMD (if set), then the baseline-aware checks.
+      - run: bash scripts/quality-ratchet.sh --ci

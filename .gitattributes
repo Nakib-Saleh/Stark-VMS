@@ -1,0 +1,3 @@
+# Shell scripts must keep LF endings or bash fails on Linux CI / macOS.
+*.sh text eol=lf
+*.yml text eol=lf

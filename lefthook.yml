@@ -1,0 +1,6 @@
+pre-commit:
+  parallel: false
+  commands:
+    quality-ratchet:
+      run: bash scripts/quality-ratchet.sh
+      fail_text: "New quality-gate failures. Fix them, or run --baseline deliberately."
