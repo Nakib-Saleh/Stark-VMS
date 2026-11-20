@@ -1,6 +1,6 @@
 # Project State
 
-*Updated: Phase 0 (foundation) shipped · Status: green*
+*Updated: Phase 1 (config from environment) built on `feature/env-config`, awaiting merge · Status: green*
 
 ## Completed
 - Restructured into a monorepo: `backend/` (Spring Boot), `frontend/` (Flutter Web), `docs/adr/`.
@@ -11,6 +11,8 @@
 - ROADMAP.md written: phases 0–17, definition of done, stretch candidates. Working assumptions: own Spring Security auth with bearer JWT (Phase 4); managed MySQL in production (Phase 6).
 
 - Quality gate fully verified, including `frontend_analyze` (format `  info - msg - lib\file.dart:1:1 - rule`; 3 planted issues counted as 3). Baseline committed: backend_compile 0, backend_test 0, frontend_analyze 8 (all `deprecated_member_use` on `package:flutter/material.dart` imports, deprecated after Flutter 3.47). Lefthook deliberately not installed (user's call); CI is the gate.
+
+- Phase 1 (2026-11-21, `feature/env-config`): DB_URL / DB_USERNAME / DB_PASSWORD / CORS_ALLOWED_ORIGINS placeholders with local defaults in `application.properties`; `@CrossOrigin("*")` removed, replaced by `config/CorsConfig.java` (allowedOriginPatterns on `/api/**`, local default `http://localhost:[*],http://127.0.0.1:[*]`, env value replaces default, empty = allow none). `.env.example` at root. ADR-0004 + private note. Tests 14/14 (5 new CORS tests incl. foreign origin refused). walkthrough.md steps 2–9 verified live; step 13 (Flutter in Chrome) and 14 (CI) not yet run.
 
 ## Local environment (Windows, user's machine)
 - JDK 21 (`C:\Program Files\Microsoft\jdk-21.0.13.102-hotspot`) alongside JDK 17; Gradle toolchain picks 21.
@@ -27,12 +29,14 @@
 - State: `frontend/lib/providers/vehicle_providers.dart` (Riverpod)
 - UI primitives: `frontend/lib/widgets/` (shadcn_ui): badges, delete dialog, detail sheet, row card
 - Loading / progress feedback: skeletonizer + infinite_scroll_pagination in `frontend/lib/screens/vehicle_list_screen.dart`
+- Config / CORS: `.../config/CorsConfig.java` (all `/api/**` CORS lives here; never add `@CrossOrigin`); env vars listed in `.env.example`
+- Web-layer tests: `@WebMvcTest` is `org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest`, mocks via `org.springframework.test.context.bean.override.mockito.MockitoBean` (Boot 4 packages; see `.../config/CorsConfigTest.java`)
 - Shared helpers: backend errors `.../exception/GlobalExceptionHandler.java`; paging `.../dto/PagedResponse.java`; frontend config `frontend/lib/config/api_config.dart`
 - (`...` = `backend/src/main/java/com/example/stark_group_vms`)
 
 ## Conventions specific to this project
 - Claude acts as tech lead: plain-language options, pros/cons, recommendation; user approves. Label each decision "engineering call" or "requirements question".
-- Decision records are two-tier: private teaching note in `.internal/decisions/NNNN-*.md` (git-ignored), short public ADR in `docs/adr/NNNN-*.md` run through `humanize-md`, written in the user's first-person voice ("I"), committed with the code it governs. Shared numbering. Next free number: 0004.
+- Decision records are two-tier: private teaching note in `.internal/decisions/NNNN-*.md` (git-ignored), short public ADR in `docs/adr/NNNN-*.md` run through `humanize-md`, written in the user's first-person voice ("I"), committed with the code it governs. Shared numbering. Next free number: 0005.
 - Quote sources exactly (file:line, who, when) before saying "the spec says". The page-shape spec is Naimul's Discord note (`Guides/DiscordChat.txt:103-112`), not the official course doc.
 - `Guides/` (course material) is git-ignored.
 - Instructor questions sent, no reply yet: one repo vs two; page shape. Proceeding with ADR-0001/0002.
@@ -52,5 +56,7 @@
 - No login screen, though the course videos reference an "existing" one. Requirements question sent: OK to build on the starter vs rebuild from scratch?
 
 ## Known shortcuts deferred
+- `config/DataSeeder.java` seeds 20 demo vehicles whenever the table is empty, in every environment including production. Decide in Phase 6 (demo data on the live site, or local only).
+- Frontend API base URL is hard-coded in `frontend/lib/config/api_config.dart`; make it a `--dart-define` in Phase 6.
 - `scripts/quality-checks.sh` — no `flutter build web` in BUILD_CMD; add before Phase 6.
 - (resolved) CI Flutter pinned to 3.50.1 to match local.
