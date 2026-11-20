@@ -42,6 +42,7 @@ Run from the repo root in PowerShell. Start each step from a stopped backend unl
 
 ## The app still works end to end
 
-13. `cd frontend; flutter run -d chrome` (random port, no extra flags).
+13. With the backend running (step 1, no env vars set), in a second terminal: `cd frontend; flutter run -d chrome` (random port, no extra flags).
+    If the backend is not running, Dio reports a "connection error" that mentions CORS; that wording is Dio's generic guess, not a CORS refusal.
     **Expect:** vehicle list loads with data. DevTools Network tab shows `/api/vehicles` with status 200 and no CORS error in the console.
 14. Push the branch. **Expect:** CI green (backend tests run against the CI MySQL service using the defaults).
