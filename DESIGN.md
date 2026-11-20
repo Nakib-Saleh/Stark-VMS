@@ -102,7 +102,8 @@ No scroll-triggered reveals, no staggered card entrances, no parallax.
 6. **Empty states invite action:** "No vehicles yet. Register the first vehicle…" with the button. A search with no matches offers "Clear search and filter".
 7. **Everything clickable has hover, pressed and keyboard-focus states.** Focus ring: 2px `blue`, 2px offset. Rows open on click, Enter or Space. Escape closes panels and dialogs.
 8. **Every page has a URL** (`/`, `/login`, `/dashboard`, `/vehicles`, `/vehicles/new`, `/vehicles/:id/edit`); the detail panel opens over the list. Signed-out visitors to an app URL go to sign-in, then back to where they were going.
-9. **Live plate preview** on the register/edit form updates as you type; the number field auto-inserts the dash.
+9. **Lists are paged with visible page numbers, not infinite scroll.** The page lives in the URL (`/vehicles?page=2`), so refresh and Back keep your place. Changing page shows skeleton rows shaped like the register and scrolls to the top of the list; the page count and "Showing x–y of z" come from the same server response, so they always agree. Changing a filter or search returns to page 1.
+10. **Live plate preview** on the register/edit form updates as you type; the number field auto-inserts the dash.
 
 ## Components
 
@@ -113,6 +114,7 @@ No scroll-triggered reveals, no staggered card entrances, no parallax.
 | Plate (xl) | 4px border, radius 8, double inner rule, number 54–96px. Landing and sign-in only |
 | Side menu | 232px, `navy`; current page `navy2` + 3px inset left bar `#6E9BEF`; becomes a top bar under 820px |
 | Register (list) | one `paper` surface, header row `#F8F9FB`, columns: plate · vehicle · driver · papers · status · actions; stacks under 960px |
+| Pagination | under the register, inside the page width: left "Showing 11–20 of 21 vehicles" (`muted`, tabular figures); right "‹ Previous", page numbers, "Next ›" as quiet buttons, current page `navy` fill with white text and `aria-current="page"`. Long ranges collapse to `1 … 4 [5] 6 … 12`. Previous/Next disabled (not hidden) at the ends. Hidden when there is only one page. Phone width: just "‹ Previous · Page 2 of 3 · Next ›" |
 | Filter chip | pill, `paper` with `line` border; selected = `navy` fill, white text; shows count |
 | Status | coloured dot + word, no pill background |
 | Figures (dashboard) | one surface split by 1px lines; Archivo 34px numbers; no icons |

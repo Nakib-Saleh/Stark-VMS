@@ -42,7 +42,7 @@ Depends on: 1
 Delivers: request/response DTOs instead of entity, page `size` cap, case-insensitive unique vehicle number at DB level, 400/409 tests; add `company` field to vehicles (course field list, transcripts.md:488)
 Demo: no
 
-### Phase 3 — Page response shape · planned
+### Phase 3 — Page response shape · shipped
 Depends on: 2
 Delivers: ADR-0002 implemented (Spring Page fields + `hasNext`), API test for all seven fields, API.md updated; starter list screen adapted to the new shape so it keeps working until Phase 7
 Demo: no
@@ -66,7 +66,7 @@ Demo: yes
 
 ### Phase 7 — Vehicle screens in the new design · planned
 Depends on: 4 (built right after 4, before 5 and 6)
-Delivers: vehicle list (number-plate rows, search, status filter, skeleton loading), register / edit pages with live plate preview and field-level errors (Company field in the form), detail panel, remove-with-confirmation, all to DESIGN.md with their own URLs. Starter screens and the unused counter template deleted. Before/after screenshots in the PR.
+Delivers: vehicle list (number-plate rows, search, status filter, skeleton loading, numbered pagination with the page in the URL, replacing the starter's infinite scroll), register / edit pages with live plate preview and field-level errors (Company field in the form), detail panel, remove-with-confirmation, all to DESIGN.md with their own URLs. Starter screens and the unused counter template deleted. Before/after screenshots in the PR.
 Demo: yes
 
 ### Phase 8 — Assignment 1 release · planned
@@ -139,6 +139,8 @@ Candidates (not committed, become phases only when chosen):
 ## Change log
 
 Newest first. One line per change. This is the "why did that change?" record.
+
+- 2026-11-21 — user noticed the list has no visible pages, only infinite scroll → Phase 7 list uses numbered pagination with the page in the URL; DESIGN.md gains a Pagination component and rule.
 
 - 2026-11-21 — user worried that leaving all UI to Phase 7 means testing on the old UI and breakage late → UI built as we go: Phase 4 takes the design foundation (theme, fonts, routing, landing, sign-in, app frame), Phase 7 narrowed to vehicle screens and runs right after 4 (order 3 → 4 → 7 → 5 → 6 → 8); Phase 3 keeps the starter list working; definition of done requires new-design screens from Phase 4 on.
 

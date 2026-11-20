@@ -1,6 +1,6 @@
 # Project State
 
-*Updated: Phase 2 (harden vehicle API) shipped · Status: green · GitHub: https://github.com/Nakib-Saleh/Stark-VMS (public; `main`, `dev` pushed). Actions had to be enabled by hand; first CI run green on `dev` 3e2a69d. `gh` CLI not installed, so merges are local `--no-ff` until it is.*
+*Updated: Phase 3 (page response shape) shipped · Status: green · GitHub: https://github.com/Nakib-Saleh/Stark-VMS (public; `main`, `dev` pushed). Actions had to be enabled by hand; first CI run green on `dev` 3e2a69d. `gh` CLI not installed, so merges are local `--no-ff` until it is.*
 
 ## Completed
 - Restructured into a monorepo: `backend/` (Spring Boot), `frontend/` (Flutter Web), `docs/adr/`.
@@ -15,6 +15,8 @@
 - Phase 1 (2026-11-21, `feature/env-config`): DB_URL / DB_USERNAME / DB_PASSWORD / CORS_ALLOWED_ORIGINS placeholders with local defaults in `application.properties`; `@CrossOrigin("*")` removed, replaced by `config/CorsConfig.java` (allowedOriginPatterns on `/api/**`, local default `http://localhost:[*],http://127.0.0.1:[*]`, env value replaces default, empty = allow none). `.env.example` at root. ADR-0004 + private note. Tests 14/14 (5 new CORS tests incl. foreign origin refused). walkthrough.md steps 2–9 verified live; step 13 (Flutter in Chrome) and 14 (CI) not yet run.
 
 - Phase 2 (2026-11-21, `feature/harden-vehicle-api`): create/update take `dto/VehicleRequest` (all validation, plain-English messages, server fields absent); entity is persistence-only; numbers stored trimmed + upper case; page size 1–100 and page ≥ 0 give 400 with the real reason (`InvalidRequestException`); duplicates give 409 with `errors.vehicleNumber`, also when MySQL's unique key catches a race; nullable `company` (free text ≤100, optional until the Phase 7 form). Tests 23/23 (new `VehicleApiIntegrationTest` runs on real MySQL). Walkthrough steps 1–13 ✅ live.
+
+- Phase 3 (2026-11-21, `feature/page-response-shape`): `PagedResponse` returns `content, number, size, totalElements, totalPages, last, hasNext` (ADR-0002 implemented; page past the end = 200 empty, `last: true`). `docs/API.md` written: endpoints, page shape, request rules, error shape. Flutter unchanged (its page model ignores the new fields). Tests 25/25. Walkthrough 1–8 ✅ live.
 
 ## Local environment (Windows, user's machine)
 - JDK 21 (`C:\Program Files\Microsoft\jdk-21.0.13.102-hotspot`) alongside JDK 17; Gradle toolchain picks 21.
@@ -35,7 +37,8 @@
 - Web-layer tests: `@WebMvcTest` is `org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest`, mocks via `org.springframework.test.context.bean.override.mockito.MockitoBean` (Boot 4 packages; see `.../config/CorsConfigTest.java`)
 - Request DTO + errors: `.../dto/VehicleRequest.java` (never bind the entity); `InvalidRequestException(message, fieldErrors)` → 400 and `DuplicateResourceException(field, message)` → 409, both rendered with `errors.<field>` so the UI can place them next to the field
 - Real-DB tests: `VehicleApiIntegrationTest` (`@SpringBootTest` + `@AutoConfigureMockMvc` from `org.springframework.boot.webmvc.test.autoconfigure`; test data prefixed `TEST-IT-`, deleted after each test)
-- Shared helpers: backend errors `.../exception/GlobalExceptionHandler.java`; paging `.../dto/PagedResponse.java`; frontend config `frontend/lib/config/api_config.dart`
+- API contract: `docs/API.md`. Update it in the same commit as any endpoint, field or error change (Phase 4 adds Login).
+- Shared helpers: backend errors `.../exception/GlobalExceptionHandler.java`; paging `.../dto/PagedResponse.java` (7 fields, add never rename); frontend config `frontend/lib/config/api_config.dart`
 - (`...` = `backend/src/main/java/com/example/stark_group_vms`)
 
 ## Conventions specific to this project
@@ -46,7 +49,7 @@
 - Instructor questions sent, no reply yet: one repo vs two; page shape. Proceeding with ADR-0001/0002.
 
 ## Next up
-1. `/plan 3` (page response shape; keep the starter list working).
+1. `/plan 4` (login + new UI foundation). Phase 3 shipped.
 2. Then Phase 4 (login + new UI foundation), then Phase 7 (vehicle screens), then 5, 6, 8. Order agreed 2026-11-21, see ROADMAP execution order.
 - Design: DESIGN.md (direction "Number Plate", prototype https://claude.ai/artifact/GoyQDDWuLnDdNH64Yu3qTS). Pages: landing `/`, `/login`, `/vehicles`, `/vehicles/new`, `/vehicles/:id`, `/vehicles/:id/edit`; A2 adds `/dashboard` (first page after sign-in), `/drivers`; documents and maintenance as tabs on vehicle detail. No sign-up, no forgot-password.
 - Headless screenshots of the Flutter app need a release build (`flutter build web` + static server); the debug web-server stays blank.
