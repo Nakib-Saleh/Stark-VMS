@@ -69,14 +69,21 @@ $ARGUMENTS
    If nothing qualifies, write nothing and say so in one line. Never invent a problem or a
    measurement to fill the inbox.
 
-4. **Gate.** Run `bash scripts/quality-ratchet.sh`. If it reports new failures, stop and
+4. **Walkthrough.** Read `walkthrough.md`. Every `[Claude]` step must be marked `✅`.
+   If any is unmarked or `❌`, stop and report which; don't commit. `[You]` steps are
+   the developer's; list any not confirmed in the developer's note as "not yet checked
+   by you" in your report, but don't block on them.
+
+5. **Gate.** Run `bash scripts/quality-ratchet.sh`. If it reports new failures, stop and
    report them. Don't commit, and don't fix application code from here.
 
-5. **Commit, merge, push.** Do this only if the gate passed and the developer's note asks
+6. **Commit, merge, push.** Do this only if the gate passed and the developer's note asks
    for it. On the unit's branch, commit as `Phase N: <what it delivers>` (or
-   `<unit>: <what it delivers>` when it isn't a roadmap phase). Then check out the default
-   branch shown above, run `git merge --no-ff <branch> -m "Merge <branch>: <what it delivers>"`,
+   `<unit>: <what it delivers>` when it isn't a roadmap phase). Then check out **`dev`**
+   (ADR-0003: phases merge into `dev`; `main` only receives finished assignments and is
+   what Netlify/Render deploy, so never merge a phase into it, whatever the default branch
+   above says), run `git merge --no-ff <branch> -m "Merge <branch>: <what it delivers>"`,
    and push it. Never force-push. If any step fails, stop and report the exact error.
 
-6. Return the five bullets, the build-log line, the gate result, and the commit and merge
+7. Return the five bullets, the build-log line, the gate result, and the commit and merge
    hashes. End with: run `/clear` before the next unit.

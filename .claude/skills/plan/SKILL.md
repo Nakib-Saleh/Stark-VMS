@@ -56,8 +56,27 @@ size or radius.
    each with its expected result. For user-facing units, include steps that check rule 3a
    (undo every filter or toggle the visible way, and confirm indicators agree after acting)
    and rule 3b (trigger each new destination or slow action on a throttled or slow path).
+
+   **Tag every step `[Claude]` or `[You]`.** The developer does not have time to run
+   scripted steps. `[Claude]` is the default: anything a command can drive and check
+   (HTTP calls, curl/PowerShell, env-var restarts, log greps, tests, CI status, file
+   checks, headless screenshots). `[You]` is only for steps that need a person in the
+   real UI: clicking through Flutter screens, judging how something looks or feels,
+   keyboard/screen-reader use, throttled-network feel. Keep `[You]` steps few, short
+   and grouped at the end, each saying exactly what to click and what to look for.
+   A `[You]` step must never depend on the developer starting servers: say "Claude
+   leaves the backend running" and do so.
 5. Output the DECISIONS block from `CLAUDE.md`. Ten lines maximum.
 
 **STOP after the DECISIONS block.** Don't write or modify any application code until the
 developer approves. If the simplicity ladder makes you rethink the approach while you
 write the block, say so instead of going ahead.
+
+## After approval: when the build is done
+
+Before asking to commit, **run every `[Claude]` step in `walkthrough.md` yourself**, in
+order, against the real running app (not only the test suite). Mark each step in the
+file `✅` or `❌` with one line of evidence (status code, header, log line). Fix any `❌`
+that this unit caused, then re-run it. Then start whatever the `[You]` steps need (backend,
+`flutter run`), leave it running, and hand the developer only the `[You]` list. The unit
+is not done until the developer reports back on the `[You]` steps.
