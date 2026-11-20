@@ -32,7 +32,7 @@ Depends on: 0
 Delivers: DB URL/user/password and allowed origins read from env vars with local defaults; `.env.example`; ADR
 Demo: no
 
-### Phase 2 — Harden the vehicle API · planned
+### Phase 2 — Harden the vehicle API · shipped
 Depends on: 1
 Delivers: request/response DTOs instead of entity, page `size` cap, case-insensitive unique vehicle number at DB level, 400/409 tests; add `company` field to vehicles (course field list, transcripts.md:488)
 Demo: no

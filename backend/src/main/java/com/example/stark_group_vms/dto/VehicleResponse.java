@@ -11,6 +11,7 @@ public record VehicleResponse(
         Long id,
         String vehicleNumber,
         VehicleType vehicleType,
+        String company,
         String brand,
         String model,
         Integer manufacturingYear,
@@ -28,6 +29,7 @@ public record VehicleResponse(
                 vehicle.getId(),
                 vehicle.getVehicleNumber(),
                 vehicle.getVehicleType(),
+                vehicle.getCompany(),
                 vehicle.getBrand(),
                 vehicle.getModel(),
                 vehicle.getManufacturingYear(),
@@ -42,4 +44,3 @@ public record VehicleResponse(
         );
     }
 }
-

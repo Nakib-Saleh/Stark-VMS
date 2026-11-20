@@ -1,8 +1,8 @@
 package com.example.stark_group_vms.controller;
 
 import com.example.stark_group_vms.dto.PagedResponse;
+import com.example.stark_group_vms.dto.VehicleRequest;
 import com.example.stark_group_vms.dto.VehicleResponse;
-import com.example.stark_group_vms.entity.Vehicle;
 import com.example.stark_group_vms.service.VehicleService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -40,16 +40,16 @@ public class VehicleController {
     }
 
     @PostMapping
-    public ResponseEntity<VehicleResponse> createVehicle(@Valid @RequestBody Vehicle vehicle) {
-        VehicleResponse created = vehicleService.createVehicle(vehicle);
+    public ResponseEntity<VehicleResponse> createVehicle(@Valid @RequestBody VehicleRequest request) {
+        VehicleResponse created = vehicleService.createVehicle(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<VehicleResponse> updateVehicle(
             @PathVariable Long id,
-            @Valid @RequestBody Vehicle vehicle) {
-        return ResponseEntity.ok(vehicleService.updateVehicle(id, vehicle));
+            @Valid @RequestBody VehicleRequest request) {
+        return ResponseEntity.ok(vehicleService.updateVehicle(id, request));
     }
 
     @DeleteMapping("/{id}")

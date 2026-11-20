@@ -44,6 +44,11 @@ public class DataSeeder {
                     build("RAJ-METRO-CHA-15-9005", VehicleType.MICROBUS, "Toyota", "Noah", 2021, "Black", FuelType.HYBRID, 8, "Alamin Mia", "+8801711000020", VehicleStatus.INACTIVE)
             );
 
+            String[] companies = {"Stark Logistics", "Stark Foods", "Stark Pharma", "Stark Group HQ"};
+            for (int i = 0; i < mockVehicles.size(); i++) {
+                mockVehicles.get(i).setCompany(companies[i % companies.length]);
+            }
+
             vehicleRepository.saveAll(mockVehicles);
         };
     }

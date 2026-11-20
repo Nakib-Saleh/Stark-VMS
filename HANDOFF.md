@@ -1,6 +1,6 @@
 # Project State
 
-*Updated: Phase 1 (config from environment) shipped · Status: green · GitHub: https://github.com/Nakib-Saleh/Stark-VMS (public; `main`, `dev` pushed). Actions had to be enabled by hand; first CI run green on `dev` 3e2a69d. `gh` CLI not installed, so merges are local `--no-ff` until it is.*
+*Updated: Phase 2 (harden vehicle API) shipped · Status: green · GitHub: https://github.com/Nakib-Saleh/Stark-VMS (public; `main`, `dev` pushed). Actions had to be enabled by hand; first CI run green on `dev` 3e2a69d. `gh` CLI not installed, so merges are local `--no-ff` until it is.*
 
 ## Completed
 - Restructured into a monorepo: `backend/` (Spring Boot), `frontend/` (Flutter Web), `docs/adr/`.
@@ -14,6 +14,8 @@
 
 - Phase 1 (2026-11-21, `feature/env-config`): DB_URL / DB_USERNAME / DB_PASSWORD / CORS_ALLOWED_ORIGINS placeholders with local defaults in `application.properties`; `@CrossOrigin("*")` removed, replaced by `config/CorsConfig.java` (allowedOriginPatterns on `/api/**`, local default `http://localhost:[*],http://127.0.0.1:[*]`, env value replaces default, empty = allow none). `.env.example` at root. ADR-0004 + private note. Tests 14/14 (5 new CORS tests incl. foreign origin refused). walkthrough.md steps 2–9 verified live; step 13 (Flutter in Chrome) and 14 (CI) not yet run.
 
+- Phase 2 (2026-11-21, `feature/harden-vehicle-api`): create/update take `dto/VehicleRequest` (all validation, plain-English messages, server fields absent); entity is persistence-only; numbers stored trimmed + upper case; page size 1–100 and page ≥ 0 give 400 with the real reason (`InvalidRequestException`); duplicates give 409 with `errors.vehicleNumber`, also when MySQL's unique key catches a race; nullable `company` (free text ≤100, optional until the Phase 7 form). Tests 23/23 (new `VehicleApiIntegrationTest` runs on real MySQL). Walkthrough steps 1–13 ✅ live.
+
 ## Local environment (Windows, user's machine)
 - JDK 21 (`C:\Program Files\Microsoft\jdk-21.0.13.102-hotspot`) alongside JDK 17; Gradle toolchain picks 21.
 - MySQL 8.4 in Docker container `stark-mysql`, bound to 127.0.0.1:3306, empty root password, volume `stark-mysql-data`. Start with `docker start stark-mysql`. Windows `MySQL80` service stopped + set Manual (it held port 3306; user doesn't use it).
@@ -21,7 +23,7 @@
 - User's terminal is Windows PowerShell 5.1: give user-facing commands in PowerShell syntax (no `&&`).
 
 ## Data model — entities and access rules
-- `vehicles` (MySQL, `ddl-auto=update`): no access control yet; no auth exists on backend or frontend.
+- `vehicles` (MySQL, `ddl-auto=update`): unique key on `vehicle_number` (case-insensitive via default `utf8mb4_0900_ai_ci`; values stored upper case). `company` varchar(100) nullable since Phase 2 (old rows null). No access control yet; no auth exists on backend or frontend.
 
 ## Reusable utilities and components — CHECK BEFORE CREATING ANYTHING NEW
 - Data access / clients: `frontend/lib/network/dio_client.dart`, `frontend/lib/network/vehicle_api.dart` (Retrofit), `frontend/lib/repositories/vehicle_repository.dart`; backend `.../repository/VehicleRepository.java`
@@ -31,6 +33,8 @@
 - Loading / progress feedback: skeletonizer + infinite_scroll_pagination in `frontend/lib/screens/vehicle_list_screen.dart`
 - Config / CORS: `.../config/CorsConfig.java` (all `/api/**` CORS lives here; never add `@CrossOrigin`); env vars listed in `.env.example`
 - Web-layer tests: `@WebMvcTest` is `org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest`, mocks via `org.springframework.test.context.bean.override.mockito.MockitoBean` (Boot 4 packages; see `.../config/CorsConfigTest.java`)
+- Request DTO + errors: `.../dto/VehicleRequest.java` (never bind the entity); `InvalidRequestException(message, fieldErrors)` → 400 and `DuplicateResourceException(field, message)` → 409, both rendered with `errors.<field>` so the UI can place them next to the field
+- Real-DB tests: `VehicleApiIntegrationTest` (`@SpringBootTest` + `@AutoConfigureMockMvc` from `org.springframework.boot.webmvc.test.autoconfigure`; test data prefixed `TEST-IT-`, deleted after each test)
 - Shared helpers: backend errors `.../exception/GlobalExceptionHandler.java`; paging `.../dto/PagedResponse.java`; frontend config `frontend/lib/config/api_config.dart`
 - (`...` = `backend/src/main/java/com/example/stark_group_vms`)
 
