@@ -34,7 +34,7 @@ Demo: no
 
 ### Phase 2 — Harden the vehicle API · planned
 Depends on: 1
-Delivers: request/response DTOs instead of entity, page `size` cap, case-insensitive unique vehicle number at DB level, 400/409 tests
+Delivers: request/response DTOs instead of entity, page `size` cap, case-insensitive unique vehicle number at DB level, 400/409 tests; add `company` field to vehicles (course field list, transcripts.md:488)
 Demo: no
 
 ### Phase 3 — Page response shape · planned
@@ -44,7 +44,7 @@ Demo: no
 
 ### Phase 4 — Login (backend + frontend) · planned
 Depends on: 2
-Delivers: ADR on session approach; Spring Security on every endpoint, hashed passwords, seeded user; Flutter login screen, logout, auth-guarded routes; tests as unauthenticated user
+Delivers: ADR on session approach; Spring Security on every endpoint, hashed passwords, seeded user; Flutter login screen built to the design brief, logout, URL-based routing with auth-guarded routes (routing package decided at /plan); tests as unauthenticated user
 Working assumption (agreed 2026-11-20, confirm in ADR): own auth in Spring Security, no Clerk/Auth0/Supabase Auth (login is a graded skill on a Spring course). Bearer token in the `Authorization` header, not a cookie (Netlify and Render are different domains). Spring Security's built-in JWT support, no extra library. No public sign-up: admin seeded at setup.
 Demo: yes
 
@@ -59,9 +59,9 @@ Delivers: ADR on production DB; Flutter Web on Netlify, API on Render; CORS lock
 Working assumption (agreed 2026-11-20, confirm in ADR): MySQL in production too, on a free managed MySQL host (e.g. Aiven, TiDB Cloud), to keep the local and production databases identical. Re-verify free-tier limits before choosing; Render free Postgres was rejected as it may expire. Handle Render free-tier sleep (slow first request) with a "waking up the server" state in the app and a README note.
 Demo: yes
 
-### Phase 7 — Assignment 1 UX pass · planned
+### Phase 7 — Assignment 1 UI rebuild · planned
 Depends on: 4
-Delivers: `/design-brief` run first to capture the existing shadcn_ui design (refine, don't redesign: keeps "what I added" visible against the starter). Use the app as a fleet manager, list friction points, fix the top ones; login screen matches the existing design.
+Delivers: full visual redesign to the design brief (made before Phase 1 code; keeps shadcn_ui as the component kit, replaces the starter's look): public landing page (`/`, what it is + Sign in + GitHub link, no demo credentials), app frame with left menu and top bar (user, sign out), vehicle list / add / edit / detail pages each with their own URL, not-found and "server waking up" states, delete the unused counter template. Before/after screenshots in the PR.
 Demo: yes
 
 ### Phase 8 — Assignment 1 release · planned
@@ -134,6 +134,8 @@ Candidates (not committed, become phases only when chosen):
 ## Change log
 
 Newest first. One line per change. This is the "why did that change?" record.
+
+- 2026-11-20 — user asked for a rebuilt frontend with landing page and login, "make it our own, not AI slop" → Phase 7 changed from refine to full redesign + landing page + app frame + per-page URLs; Phase 4 adds URL routing; Phase 2 adds Company field; design brief to be written before Phase 1 code. Landing page is our addition, not a course requirement.
 
 - 2026-11-20 — user asked about UI refinement and extensions → added definition of done, Phase 7 (UX pass) before the Assignment 1 release, stretch candidates; renumbered once before first commit (old 7–16 → 8–17)
 - 2026-11-20 — user asked "local management or a service like Supabase/Clerk?" → recorded working assumptions on phases 4 (own Spring auth) and 6 (managed MySQL)

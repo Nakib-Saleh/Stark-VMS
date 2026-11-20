@@ -38,7 +38,9 @@
 - Instructor questions sent, no reply yet: one repo vs two; page shape. Proceeding with ADR-0001/0002.
 
 ## Next up
-1. Run the app once with the user (`docker start stark-mysql`; backend `bootRun`; `flutter run -d chrome`) so they see the starter UI before anything changes.
+0. DONE 2026-11-21: DESIGN.md written (direction "Number Plate"; prototype https://claude.ai/artifact/GoyQDDWuLnDdNH64Yu3qTS). Every UI phase reads tokens from it. The prototype also previews A2 ideas (Company field, paper expiry, ACTIVE/MAINTENANCE/INACTIVE). Next: start Phase 1.
+1. (superseded by DESIGN.md) Run `/design-brief` for a full redesign (not a capture of the starter): Stark Group guideline as the base (left menu, deep/corporate blue, green = active, red = delete/errors, white cards), landing page, app frame. Keep shadcn_ui as the component kit. Pages and flow agreed 2026-11-20: landing `/`, `/login`, `/vehicles`, `/vehicles/new`, `/vehicles/:id`, `/vehicles/:id/edit`; A2 adds `/dashboard` (first page after sign-in), `/drivers`; documents and maintenance live as tabs on the vehicle detail page. No sign-up, no forgot-password.
+   (Done 2026-11-20: ran the app with the user. API on 9001 returns 20 seeded vehicles; starter UI screenshot reviewed. Note: headless screenshots need a release build; the debug web-server stays blank.)
 2. Push to GitHub: ask the user first (outward-facing). Check CI goes green on the first push.
 3. Start Phase 1 (config from environment) on `feature/env-config` via the DECISIONS gate.
 
