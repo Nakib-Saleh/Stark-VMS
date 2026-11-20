@@ -127,6 +127,44 @@ class VehicleApiIntegrationTest {
                 .andExpect(jsonPath("$.message").value("Page number can't be negative"));
     }
 
+    @Test
+    void pageResponseHasAllSevenFieldsInOrderAndTheyAgreeWithTheDatabase() throws Exception {
+        long total = repository.count();
+        int size = 3;
+        int pages = (int) Math.ceil(total / (double) size);
+
+        String json = mockMvc.perform(get("/api/vehicles").param("page", "0").param("size", String.valueOf(size)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.number").value(0))
+                .andExpect(jsonPath("$.size").value(size))
+                .andExpect(jsonPath("$.totalElements").value(total))
+                .andExpect(jsonPath("$.totalPages").value(pages))
+                .andExpect(jsonPath("$.last").value(pages <= 1))
+                .andExpect(jsonPath("$.hasNext").value(pages > 1))
+                .andReturn().getResponse().getContentAsString();
+
+        // Top-level keys, in order (the content array's own keys come after "content" and are skipped).
+        String top = json.substring(json.lastIndexOf(']'));
+        assertThat(json).startsWith("{\"content\":[");
+        assertThat(top).containsSubsequence("\"number\"", "\"size\"", "\"totalElements\"",
+                "\"totalPages\"", "\"last\"", "\"hasNext\"");
+
+        mockMvc.perform(get("/api/vehicles").param("page", String.valueOf(Math.max(pages - 1, 0)))
+                        .param("size", String.valueOf(size)))
+                .andExpect(jsonPath("$.last").value(true))
+                .andExpect(jsonPath("$.hasNext").value(false));
+    }
+
+    @Test
+    void pagePastTheEndIsEmptyNotAnError() throws Exception {
+        mockMvc.perform(get("/api/vehicles").param("page", "9999").param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isEmpty())
+                .andExpect(jsonPath("$.number").value(9999))
+                .andExpect(jsonPath("$.last").value(true))
+                .andExpect(jsonPath("$.hasNext").value(false));
+    }
+
     private static Vehicle vehicle(String number) {
         Vehicle v = new Vehicle();
         v.setVehicleNumber(number);

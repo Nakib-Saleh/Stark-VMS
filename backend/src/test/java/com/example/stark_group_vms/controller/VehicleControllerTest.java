@@ -73,17 +73,22 @@ class VehicleControllerTest {
     @Test
     void getVehicles_returnsPagedResponseJson() throws Exception {
         VehicleResponse v = sampleVehicleResponse();
-        Page<VehicleResponse> page = new PageImpl<>(List.of(v), PageRequest.of(0, 10), 1);
-        when(vehicleService.getVehicles(0, 10)).thenReturn(page);
+        // Page 1 of size 1 out of 3 vehicles: a middle page, so last and hasNext are both meaningful.
+        Page<VehicleResponse> page = new PageImpl<>(List.of(v), PageRequest.of(1, 1), 3);
+        when(vehicleService.getVehicles(1, 1)).thenReturn(page);
 
         mockMvc.perform(get("/api/vehicles")
-                        .param("page", "0")
-                        .param("size", "10"))
+                        .param("page", "1")
+                        .param("size", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].id").value(1))
                 .andExpect(jsonPath("$.content[0].vehicleNumber").value("DHA-METRO-GA-12-3456"))
-                .andExpect(jsonPath("$.hasNext").value(false))
-                .andExpect(jsonPath("$.totalElements").value(1));
+                .andExpect(jsonPath("$.number").value(1))
+                .andExpect(jsonPath("$.size").value(1))
+                .andExpect(jsonPath("$.totalElements").value(3))
+                .andExpect(jsonPath("$.totalPages").value(3))
+                .andExpect(jsonPath("$.last").value(false))
+                .andExpect(jsonPath("$.hasNext").value(true));
     }
 
     @Test

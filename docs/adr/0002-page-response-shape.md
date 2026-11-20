@@ -1,6 +1,6 @@
 # ADR-0002: Return both page formats from the vehicle list
 
-Status: Accepted · Date: 2026-11-20
+Status: Accepted · Date: 2026-11-20 · Implemented in Phase 3 (2026-11-21); contract documented in `docs/API.md`
 
 ## Context
 
