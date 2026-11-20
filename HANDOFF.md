@@ -1,6 +1,6 @@
 # Project State
 
-*Updated: Phase 1 (config from environment) shipped, merged into `dev` locally (653f71d) · Status: green · Not on GitHub yet: no remote, `gh` CLI not installed*
+*Updated: Phase 1 (config from environment) shipped · Status: green · GitHub: https://github.com/Nakib-Saleh/Stark-VMS (public; `main`, `dev` pushed). Actions had to be enabled by hand; first CI run green on `dev` 3e2a69d. `gh` CLI not installed, so merges are local `--no-ff` until it is.*
 
 ## Completed
 - Restructured into a monorepo: `backend/` (Spring Boot), `frontend/` (Flutter Web), `docs/adr/`.
