@@ -27,7 +27,7 @@ Depends on: —
 Delivers: monorepo, STACK.md, quality gate verified against real failures, CI, ADRs 0001–0003, this roadmap
 Demo: no
 
-### Phase 1 — Configuration from environment · in progress
+### Phase 1 — Configuration from environment · shipped
 Depends on: 0
 Delivers: DB URL/user/password and allowed origins read from env vars with local defaults; `.env.example`; ADR
 Demo: no

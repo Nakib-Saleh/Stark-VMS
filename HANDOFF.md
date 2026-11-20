@@ -1,6 +1,6 @@
 # Project State
 
-*Updated: Phase 1 (config from environment) built on `feature/env-config`, awaiting merge · Status: green*
+*Updated: Phase 1 (config from environment) shipped, merged into `dev` locally (653f71d) · Status: green · Not on GitHub yet: no remote, `gh` CLI not installed*
 
 ## Completed
 - Restructured into a monorepo: `backend/` (Spring Boot), `frontend/` (Flutter Web), `docs/adr/`.
