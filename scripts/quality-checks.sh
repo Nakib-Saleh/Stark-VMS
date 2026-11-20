@@ -4,7 +4,7 @@
 #
 # shortcut: no `flutter build web` in BUILD_CMD (slow; analyze catches type errors). Add it before deploy work.
 
-CHECKS="backend_compile backend_test frontend_analyze"
+CHECKS="backend_compile backend_test frontend_analyze frontend_test"
 BUILD_CMD=""
 
 # javac errors: "path/File.java:12: error: message". Gradle repeats each one indented in its
@@ -19,3 +19,8 @@ backend_test_match=' > .* FAILED$'
 # flutter analyze: "  info - message - lib/x.dart:3:8 - rule" (older SDKs use • instead of -)
 frontend_analyze_cmd='cd frontend && flutter analyze --no-pub'
 frontend_analyze_match='^ *(error|warning|info) (-|•) '
+
+# flutter test (expanded reporter) ends each failing or hung test's line with " [E]" (verified: 1 planted failure = 1 match). Hive-backed
+# widget tests write to the OS temp folder only (see frontend/test/auth_routing_test.dart).
+frontend_test_cmd='cd frontend && flutter test --no-pub --reporter expanded --timeout 60s'
+frontend_test_match=' \[E\]$'

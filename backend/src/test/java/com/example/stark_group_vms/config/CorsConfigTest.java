@@ -10,11 +10,13 @@ import com.example.stark_group_vms.service.VehicleService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 /** CORS with the local defaults from application.properties (no env vars set). */
 @WebMvcTest(VehicleController.class)
+@Import({SecurityConfig.class, CorsConfig.class})
 class CorsConfigTest {
 
     @Autowired

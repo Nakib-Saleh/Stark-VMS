@@ -9,12 +9,14 @@ import com.example.stark_group_vms.service.VehicleService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 /** CORS as on the deployed API: the configured value replaces the localhost default. */
 @WebMvcTest(controllers = VehicleController.class,
         properties = "app.cors.allowed-origins=https://stark-vms.netlify.app")
+@Import({SecurityConfig.class, CorsConfig.class})
 class CorsConfigOverrideTest {
 
     @Autowired

@@ -1,13 +1,19 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../auth/auth_controller.dart';
 import '../models/vehicle.dart';
 import '../network/dio_client.dart';
 import '../network/vehicle_api.dart';
 import '../repositories/vehicle_repository.dart';
 
 final dioProvider = Provider<Dio>((ref) {
-  final dio = createDioClient();
+  // ref.read (not watch) inside the callbacks: the client lives for the whole app and reads the
+  // token fresh on every request.
+  final dio = createDioClient(
+    readToken: () => ref.read(authProvider).token,
+    onUnauthorized: () => ref.read(authProvider.notifier).sessionEnded(),
+  );
   ref.onDispose(dio.close);
   return dio;
 });
