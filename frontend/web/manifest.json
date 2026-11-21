@@ -1,11 +1,11 @@
 {
-    "name": "stark_vms",
-    "short_name": "stark_vms",
+    "name": "Stark VMS",
+    "short_name": "Stark VMS",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0E2240",
+    "theme_color": "#0E2240",
+    "description": "Stark VMS: the Stark Group vehicle register.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
