@@ -1,6 +1,6 @@
 # Project State
 
-*Updated: Phase 7 (vehicle screens) shipped: bc1c363 merged into `dev` as 3c7d02e, CI green · Status: green · GitHub: https://github.com/Nakib-Saleh/Stark-VMS (public; `main`, `dev` pushed). Actions had to be enabled by hand; first CI run green on `dev` 3e2a69d. `gh` CLI not installed, so merges are local `--no-ff` until it is.*
+*Updated: Phase 5 (schema migrations) done on `feature/schema-migrations`, not yet committed (Phase 7 shipped: 3c7d02e on `dev`, CI green) · Status: green · GitHub: https://github.com/Nakib-Saleh/Stark-VMS (public; `main`, `dev` pushed). Actions had to be enabled by hand; first CI run green on `dev` 3e2a69d. `gh` CLI not installed, so merges are local `--no-ff` until it is.*
 
 ## Completed
 - Restructured into a monorepo: `backend/` (Spring Boot), `frontend/` (Flutter Web), `docs/adr/`.
@@ -22,6 +22,8 @@
 
 - Phase 7 (2026-11-21, `feature/vehicle-screens`): server-side `q` (number/brand/model/company/driver, contains, ignore case, wildcards literal, ≤100) + `status` on `GET /api/vehicles`, new `GET /api/vehicles/status-counts?q=` (pulled forward from Phase 11; type/driver filters and sort stay there). Frontend rebuilt to DESIGN.md: `/vehicles?page=&q=&status=` (1-based page in URL), `/vehicles/new`, `/vehicles/:id` (transparent panel route over the register), `/vehicles/:id/edit`; numbered pagination; chips with server counts; skeleton rows/panel/form; plate preview with City + Class pickers and auto-dash number (format checked in the form only); 409 links to the existing vehicle; remove dialog (Keep focused); toasts; fresh-row flash and removed-row slide. Papers column left out until Phase 14 (panel says "Not tracked yet"). Starter screens, counter template, `infinite_scroll_pagination`, `material_ui` deleted. Backend 36/36, frontend 6/6, `flutter analyze` 0 (baseline 7 → 0). Walkthrough 1–18 ✅ (developer checked 10–18 in Chrome). Bug found in the check: the panel's `Semantics(scopesRoute: true)` needs `explicitChildNodes: true` or Flutter asserts on row click; widget tests miss it because semantics are off in tests.
 
+- Phase 5 (2026-11-21, `feature/schema-migrations`): Flyway owns the schema (`spring-boot-starter-flyway` + `flyway-mysql`, Flyway 12.4.0 managed by Boot). `V1__baseline.sql` transcribes the tables Hibernate had built (diffed with `SHOW CREATE TABLE`: only constraint names differ, now `uk_vehicles_vehicle_number`, `uk_users_username`, `ck_vehicles_manufacturing_year`). `ddl-auto=validate`. No `baseline-on-migrate`: the local DB was recreated once from V1 (demo data re-seeded, new admin password). ADR-0007 + private note. Backend 36/36. Walkthrough 1–9 ✅ (all [Claude]; no UI change).
+
 ## Local environment (Windows, user's machine)
 - JDK 21 (`C:\Program Files\Microsoft\jdk-21.0.13.102-hotspot`) alongside JDK 17; Gradle toolchain picks 21.
 - MySQL 8.4 in Docker container `stark-mysql`, bound to 127.0.0.1:3306, empty root password, volume `stark-mysql-data`. Start with `docker start stark-mysql`. Windows `MySQL80` service stopped + set Manual (it held port 3306; user doesn't use it).
@@ -30,7 +32,8 @@
 
 ## Data model — entities and access rules
 - `users` (Phase 4): `username` unique (≤50), `password_hash` BCrypt, `created_at`. No API to create users; only the seeder. Every `/api/**` route except sign-in requires a valid JWT (any signed-in user may do everything; roles are Phase 17).
-- `vehicles` (MySQL, `ddl-auto=update`): unique key on `vehicle_number` (case-insensitive via default `utf8mb4_0900_ai_ci`; values stored upper case). `company` varchar(100) nullable since Phase 2 (old rows null). Readable and writable by any signed-in user.
+- Schema is owned by Flyway (ADR-0007): `backend/src/main/resources/db/migration/V<n>__<what>.sql`. Any entity change needs a new migration in the same commit; never edit one that has run (checksum stops startup). Hibernate only validates (`ddl-auto=validate`). Enum columns are MySQL `ENUM`s, so a new status/type/fuel value needs an `ALTER` migration.
+- `vehicles` (MySQL): unique key on `vehicle_number` (case-insensitive via default `utf8mb4_0900_ai_ci`; values stored upper case). `company` varchar(100) nullable since Phase 2 (old rows null). Readable and writable by any signed-in user.
 
 ## Reusable utilities and components — CHECK BEFORE CREATING ANYTHING NEW
 - Data access / clients: `frontend/lib/network/dio_client.dart`, `frontend/lib/network/vehicle_api.dart` (Retrofit), `frontend/lib/repositories/vehicle_repository.dart`; backend `.../repository/VehicleRepository.java`
@@ -46,19 +49,21 @@
 - Web-layer tests: `@WebMvcTest` is `org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest`, mocks via `org.springframework.test.context.bean.override.mockito.MockitoBean` (Boot 4 packages; see `.../config/CorsConfigTest.java`)
 - Request DTO + errors: `.../dto/VehicleRequest.java` (never bind the entity); `InvalidRequestException(message, fieldErrors)` → 400 and `DuplicateResourceException(field, message)` → 409, both rendered with `errors.<field>` so the UI can place them next to the field
 - Real-DB tests: `VehicleApiIntegrationTest` (`@SpringBootTest` + `@AutoConfigureMockMvc` from `org.springframework.boot.webmvc.test.autoconfigure`; test data prefixed `TEST-IT-`, deleted after each test)
+- Migrations: `backend/src/main/resources/db/migration/` (V1 = baseline). Proving a migration: build an empty DB with `DB_URL=jdbc:mysql://localhost:3306/<throwaway>` and diff `SHOW CREATE TABLE`.
 - API contract: `docs/API.md`. Update it in the same commit as any endpoint, field or error change (Phase 4 adds Login).
 - Shared helpers: backend errors `.../exception/GlobalExceptionHandler.java`; paging `.../dto/PagedResponse.java` (7 fields, add never rename); frontend config `frontend/lib/config/api_config.dart`
 - (`...` = `backend/src/main/java/com/example/stark_group_vms`)
 
 ## Conventions specific to this project
 - Claude acts as tech lead: plain-language options, pros/cons, recommendation; user approves. Label each decision "engineering call" or "requirements question".
-- Decision records are two-tier: private teaching note in `.internal/decisions/NNNN-*.md` (git-ignored), short public ADR in `docs/adr/NNNN-*.md` run through `humanize-md`, written in the user's first-person voice ("I"), committed with the code it governs. Shared numbering. Next free number: 0007.
+- Decision records are two-tier: private teaching note in `.internal/decisions/NNNN-*.md` (git-ignored), short public ADR in `docs/adr/NNNN-*.md` run through `humanize-md`, written in the user's first-person voice ("I"), committed with the code it governs. Shared numbering. Next free number: 0008.
 - Quote sources exactly (file:line, who, when) before saying "the spec says". The page-shape spec is Naimul's Discord note (`Guides/DiscordChat.txt:103-112`), not the official course doc.
 - `Guides/` (course material) is git-ignored.
 - Instructor questions sent, no reply yet: one repo vs two; page shape. Proceeding with ADR-0001/0002.
 
 ## Next up
-1. `/plan 5`, then 6, 8. Order agreed 2026-11-21, see ROADMAP execution order.
+1. Commit Phase 5, merge into `dev`, check CI (CI's empty MySQL proves V1 builds the schema).
+2. Then `/plan 6`, then 8. Order agreed 2026-11-21, see ROADMAP execution order.
 - Design: DESIGN.md (direction "Number Plate", prototype https://claude.ai/artifact/GoyQDDWuLnDdNH64Yu3qTS). Pages: landing `/`, `/login`, `/vehicles`, `/vehicles/new`, `/vehicles/:id`, `/vehicles/:id/edit`; A2 adds `/dashboard` (first page after sign-in), `/drivers`; documents and maintenance as tabs on vehicle detail. No sign-up, no forgot-password.
 - Phase 7 has no before/after screenshots (no PR: merged locally because `gh` isn't installed, and headless screenshots render blank). Add them when the first PR is opened.
 - Headless screenshots of the Flutter app need a release build (`flutter build web` + static server); the debug web-server stays blank.
@@ -74,6 +79,8 @@
 - Plate format (`CITY-METRO-CLASS-NN-NNNN`) is checked in the form only; the API still takes any number up to 50 characters (so `TEST-IT-` test plates and odd legacy rows still save). Add an `@Pattern` in `VehicleRequest` if every plate must match. Non-metro plates aren't supported by the form.
 - Available and In use both show a green dot until the Phase 9 status rework.
 - Panel scrim and floating shadow use `navy` with alpha (DESIGN.md has no scrim/shadow token yet); add tokens via `/feedback` if the look changes.
+- Local admin password changed when the DB was recreated in Phase 5 (new one given to the developer in chat, not stored in the repo).
+- Schema baseline keeps Hibernate's column sizes: `vehicle_number`, `brand`, `model`, `color`, driver fields are `varchar(255)` though the API caps them at 50/100. Tighten in a later migration after checking existing rows.
 - Local backend run for the walkthrough uses a JWT_SECRET kept in Claude's scratchpad; restarting without it signs everyone out (as before).
 - Headless Chrome screenshots of the release build render blank since Phase 4 (Hive/IndexedDB opened before runApp; no console errors). Real Chrome is fine. Instrument: console.log before/after `Hive.initFlutter`/`openBox`, capture headless console.
 - Login throttle is in-memory (resets on restart, not shared across instances). Behind Render's proxy set `server.forward-headers-strategy=framework` (Phase 6) or all clients share one address.
