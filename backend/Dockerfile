@@ -14,6 +14,7 @@ RUN useradd --system --uid 10001 app
 COPY --from=build /src/build/libs/*.jar app.jar
 USER app
 # Render's free instance has 512 MB: keep the heap well inside it. Serial GC uses the least memory.
-ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=70 -XX:+UseSerialGC -XX:TieredStopAtLevel=1"
+# Times are stored and shown as Dhaka time (the API sends them without a zone; Render runs on UTC).
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=70 -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -Duser.timezone=Asia/Dhaka"
 EXPOSE 9001
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
