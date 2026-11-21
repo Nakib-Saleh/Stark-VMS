@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.example.stark_group_vms.entity.Vehicle;
 import com.example.stark_group_vms.enums.FuelType;
+import com.example.stark_group_vms.enums.VehicleStatus;
 import com.example.stark_group_vms.enums.VehicleType;
 import com.example.stark_group_vms.repository.VehicleRepository;
 import java.time.Year;
@@ -165,6 +166,56 @@ class VehicleApiIntegrationTest {
                 .andExpect(jsonPath("$.number").value(9999))
                 .andExpect(jsonPath("$.last").value(true))
                 .andExpect(jsonPath("$.hasNext").value(false));
+    }
+
+    @Test
+    void searchAndStatusCombineAndCountsAgreeWithTheList() throws Exception {
+        Vehicle a = vehicle("TEST-IT-GA-11-0101");
+        a.setDriverName("Zebulon Qwerty");
+        a.setStatus(VehicleStatus.MAINTENANCE);
+        Vehicle b = vehicle("TEST-IT-GA-11-0102");
+        b.setCompany("Qwerty Freight");
+        b.setStatus(VehicleStatus.AVAILABLE);
+        Vehicle c = vehicle("TEST-IT-GA-11-0103");
+        c.setStatus(VehicleStatus.MAINTENANCE);
+        repository.save(a);
+        repository.save(b);
+        repository.save(c);
+
+        mockMvc.perform(get("/api/vehicles").param("q", "QWERTY").param("size", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(2));
+        mockMvc.perform(get("/api/vehicles").param("q", "qwerty").param("status", "maintenance"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].vehicleNumber").value("TEST-IT-GA-11-0101"));
+        mockMvc.perform(get("/api/vehicles/status-counts").param("q", "qwerty"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.MAINTENANCE").value(1))
+                .andExpect(jsonPath("$.AVAILABLE").value(1))
+                .andExpect(jsonPath("$.IN_USE").value(0))
+                .andExpect(jsonPath("$.INACTIVE").value(0));
+    }
+
+    @Test
+    void searchTreatsWildcardsAsPlainText() throws Exception {
+        repository.save(vehicle("TEST-IT-GA-11-0201"));
+        mockMvc.perform(get("/api/vehicles").param("q", "%"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(0));
+        mockMvc.perform(get("/api/vehicles").param("q", "test-it-ga-11-02_1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
+    void unknownStatusAndOverlongSearchAreRejectedWith400() throws Exception {
+        mockMvc.perform(get("/api/vehicles").param("status", "NOPE"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.status").value("Status must be one of [AVAILABLE, IN_USE, MAINTENANCE, INACTIVE]"));
+        mockMvc.perform(get("/api/vehicles/status-counts").param("q", "x".repeat(101)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.q").value("Search text must be 100 characters or fewer"));
     }
 
     private static Vehicle vehicle(String number) {

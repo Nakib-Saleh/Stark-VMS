@@ -3,7 +3,9 @@ package com.example.stark_group_vms.controller;
 import com.example.stark_group_vms.dto.PagedResponse;
 import com.example.stark_group_vms.dto.VehicleRequest;
 import com.example.stark_group_vms.dto.VehicleResponse;
+import com.example.stark_group_vms.enums.VehicleStatus;
 import com.example.stark_group_vms.service.VehicleService;
+import java.util.Map;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,8 +32,16 @@ public class VehicleController {
     @GetMapping
     public ResponseEntity<PagedResponse<VehicleResponse>> getVehicles(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(PagedResponse.from(vehicleService.getVehicles(page, size)));
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String status) {
+        return ResponseEntity.ok(PagedResponse.from(vehicleService.getVehicles(page, size, q, status)));
+    }
+
+    /** Vehicles per status for the same {@code q} as the list, for the filter chips. */
+    @GetMapping("/status-counts")
+    public ResponseEntity<Map<VehicleStatus, Long>> getStatusCounts(@RequestParam(required = false) String q) {
+        return ResponseEntity.ok(vehicleService.countByStatus(q));
     }
 
     @GetMapping("/{id}")

@@ -14,7 +14,13 @@ abstract class VehicleApi {
   Future<PageResponse<Vehicle>> getVehicles({
     @Query('page') int page = 0,
     @Query('size') int size = 10,
+    @Query('q') String? q,
+    @Query('status') String? status,
   });
+
+  /// Vehicles per status (keys are the API's status names) for the same search text as the list.
+  @GET('/vehicles/status-counts')
+  Future<Map<String, int>> getStatusCounts({@Query('q') String? q});
 
   @GET('/vehicles/{id}')
   Future<Vehicle> getVehicleById(@Path('id') int id);

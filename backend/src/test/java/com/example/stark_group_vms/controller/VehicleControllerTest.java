@@ -75,7 +75,7 @@ class VehicleControllerTest {
         VehicleResponse v = sampleVehicleResponse();
         // Page 1 of size 1 out of 3 vehicles: a middle page, so last and hasNext are both meaningful.
         Page<VehicleResponse> page = new PageImpl<>(List.of(v), PageRequest.of(1, 1), 3);
-        when(vehicleService.getVehicles(1, 1)).thenReturn(page);
+        when(vehicleService.getVehicles(1, 1, null, null)).thenReturn(page);
 
         mockMvc.perform(get("/api/vehicles")
                         .param("page", "1")
@@ -248,7 +248,7 @@ class VehicleControllerTest {
 
     @Test
     void getVehicles_sizeOverCap_returns400WithReason() throws Exception {
-        when(vehicleService.getVehicles(0, 101))
+        when(vehicleService.getVehicles(0, 101, null, null))
                 .thenThrow(new InvalidRequestException("Page size must be between 1 and 100"));
 
         mockMvc.perform(get("/api/vehicles").param("size", "101"))

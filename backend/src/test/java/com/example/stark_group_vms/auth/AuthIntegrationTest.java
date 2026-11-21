@@ -83,6 +83,9 @@ class AuthIntegrationTest {
         for (MockHttpServletRequestBuilder request : new MockHttpServletRequestBuilder[] {
                 get("/api/vehicles"),
                 get("/api/vehicles/1"),
+                get("/api/vehicles").param("q", "toyota"),
+                get("/api/vehicles").param("status", "MAINTENANCE"),
+                get("/api/vehicles/status-counts"),
                 post("/api/vehicles").contentType(MediaType.APPLICATION_JSON).content(BODY),
                 put("/api/vehicles/1").contentType(MediaType.APPLICATION_JSON).content(BODY),
                 delete("/api/vehicles/1"),

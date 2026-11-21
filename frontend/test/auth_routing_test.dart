@@ -18,8 +18,10 @@ import 'package:stark_vms/screens/login_screen.dart';
 /// these check the app sends people to the right place and never off-site.
 class _EmptyRepository implements VehicleRepository {
   @override
-  Future<PageResponse<Vehicle>> getVehicles({int page = 0, int size = 10}) async =>
+  Future<PageResponse<Vehicle>> getVehicles({int page = 0, int size = 10, String? q, VehicleStatus? status}) async =>
       const PageResponse<Vehicle>(content: [], hasNext: false, totalElements: 0);
+  @override
+  Future<Map<VehicleStatus, int>> getStatusCounts({String? q}) async => {for (final s in VehicleStatus.values) s: 0};
   @override
   Future<Vehicle> createVehicle(Vehicle vehicle) => throw UnimplementedError();
   @override
@@ -77,6 +79,33 @@ void main() {
 
     expect(location(router), '/login?next=%2Fvehicles');
     expect(find.text('Sign in'), findsWidgets);
+  });
+
+  testWidgets('signed out: every vehicle page goes to sign-in, keeping the full address', (tester) async {
+    final router = await start(tester);
+    for (final url in ['/vehicles/new', '/vehicles/5', '/vehicles/5/edit', '/vehicles?page=2&q=toyota']) {
+      router.go(url);
+      await tester.pumpAndSettle();
+      expect(location(router), Uri(path: '/login', queryParameters: {'next': url}).toString(), reason: url);
+    }
+  });
+
+  testWidgets('signed in: the register form and an empty register open at their own addresses', (tester) async {
+    await tester.runAsync(() => box.putAll({
+      'token': 'test-token',
+      'username': 'admin',
+      'expiresAt': DateTime.now().add(const Duration(hours: 1)).toIso8601String(),
+    }));
+    final router = await start(tester);
+
+    router.go('/vehicles');
+    await tester.pumpAndSettle();
+    expect(find.text('No vehicles yet'), findsOneWidget);
+
+    router.go('/vehicles/new');
+    await tester.pumpAndSettle();
+    expect(location(router), '/vehicles/new');
+    expect(find.text('Register a vehicle'), findsOneWidget);
   });
 
   testWidgets('signed in: /vehicles opens inside the app frame, and /login goes back to the app', (tester) async {

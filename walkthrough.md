@@ -1,70 +1,69 @@
-# Walkthrough: Phase 4, login + new UI foundation
+# Walkthrough: Phase 7, vehicle screens in the new design
 
-Medium: HTTP client against the real backend (port 9001, local Docker MySQL); headless Chrome
-screenshots of a release build for public pages; the real app in Chrome for the signed-in flow.
-`[Claude]` steps are run by Claude and marked ✅/❌ with evidence. `[You]` steps need a person;
-Claude leaves the backend and the app running for them. (Phase 3's walkthrough: commit c2dfdaa.)
+Medium: HTTP client against the real backend (port 9001, local Docker MySQL, 21 seeded vehicles);
+the real app in Chrome for the screens. `[Claude]` steps are run by Claude and marked ✅/❌ with
+evidence. `[You]` steps need a person; Claude leaves the backend and `flutter run -d chrome`
+running and gives you the admin password. (Phase 4's walkthrough: commit f806f50.)
 
-## Locked by default (tested as an outsider)
+## Search and status filter on the server
 
-1. [Claude] Without a token: `GET /api/vehicles`, `GET /api/vehicles/1`, `POST`, `PUT /api/vehicles/1`, `DELETE /api/vehicles/1`
-   **Expect:** every one `401`, JSON body in the usual error shape, message "Sign in to continue". Nothing deleted (row count unchanged).
-    ✅ GET/GET id/POST/PUT/DELETE all 401 "Sign in to continue"; vehicle rows 21 → 21.
-2. [Claude] With a made-up or tampered token (`Authorization: Bearer abc`, and a real token with one character changed)
-   **Expect:** `401` each time.
-    ✅ made-up token 401, tampered token 401 (expired token: AuthIntegrationTest).
-3. [Claude] CORS preflight with no token (`OPTIONS /api/vehicles` from `http://localhost:8686`)
-   **Expect:** `200` with `Access-Control-Allow-Origin` (a browser must be able to ask before it has a token). Foreign origin still `403`.
-    ✅ localhost preflight 200 with Access-Control-Allow-Origin; evil.example 403, no ACAO.
-## Signing in
+1. [Claude] Without a token: `GET /api/vehicles?q=toyota`, `GET /api/vehicles?status=MAINTENANCE`, `GET /api/vehicles/status-counts`
+   **Expect:** each `401` "Sign in to continue".
+    ✅ all three 401 "Sign in to continue".
+2. [Claude] Signed in: `GET /api/vehicles?q=toyota&size=100`
+   **Expect:** `200`; every row has "toyota" (any case) in its number, brand, model, company or driver name; `totalElements` equals the row count; a vehicle without "toyota" anywhere is absent.
+    ✅ 200, 8 rows, every one contains toyota; totalElements 8 = rows; the 13 non-matching vehicles absent.
+3. [Claude] `GET /api/vehicles?status=MAINTENANCE&size=100`, then `?status=NOPE`
+   **Expect:** first: only Maintenance rows. Second: `400` with a message naming the allowed statuses (not a stack trace).
+    ✅ 2 rows, all Maintenance; `NOPE` → 400 "Status must be one of [AVAILABLE, IN_USE, MAINTENANCE, INACTIVE]".
+4. [Claude] `GET /api/vehicles/status-counts` and `?q=toyota`
+   **Expect:** one count per status; the counts add up to `totalElements` of the same unfiltered (or same `q`) list call.
+    ✅ {AVAILABLE 13, IN_USE 5, MAINTENANCE 2, INACTIVE 1} = 21 = totalElements; with q=toyota 8 = 8.
+5. [Claude] `GET /api/vehicles?q=` (empty) and `?q=` with 101 characters
+   **Expect:** empty = whole fleet; over 100 characters = `400`. `size=101` still `400`.
+    ✅ empty q → 21 (whole fleet); 101 chars → 400 "Search text must be 100 characters or fewer"; size=101 → 400.
+6. [Claude] Automated tests: anonymous caller refused on the new endpoint and parameters; search + status combine; counts agree with the list.
+   **Expect:** backend and frontend suites pass locally; CI green on the pushed branch.
+    ✅ local: backend 36/36 (3 new search/count tests on real MySQL + 3 new anonymous checks), frontend 6/6. CI: runs on push.
 
-4. [Claude] First start on a database with no users, `ADMIN_PASSWORD` unset
-   **Expect:** log line says an admin `admin` was created with a generated password and how to set your own. Restart: no new user, no password in the log.
-    ✅ first start: "Created admin 'admin' with generated password" (once). Restart: 0 new admins, password not in log, 1 user row, old password still signs in.
-5. [Claude] `SELECT username, password_hash FROM users`
-   **Expect:** one row; hash starts with `$2` (BCrypt). The plain password appears nowhere in the database.
-    ✅ one row, hash `$2a$10$…`; plain password absent from a full table dump.
-6. [Claude] `POST /api/auth/login` with a wrong password
-   **Expect:** `401`, message "That username and password don't match". Same message for an unknown username (no hint which was wrong).
-    ✅ wrong password and unknown user both 401 "That username and password don't match".
-7. [Claude] Five wrong passwords in a row, then a sixth attempt, even with the right password
-   **Expect:** sixth gets `429`, message says to try again in 15 minutes. A different client address is not blocked.
-    ✅ 6th attempt 429 "Too many failed sign-in attempts. Try again in 15 minutes." (throwaway username); other address unaffected (AuthIntegrationTest).
-8. [Claude] Correct login
-   **Expect:** `200` with `token`, `expiresAt` (8 hours ahead) and `username`. The token then works: `GET /api/vehicles` → `200`; `GET /api/auth/me` → `200` with the username.
-    ✅ 200, expiresAt +8h, GET /api/vehicles 200, /api/auth/me {username: admin}.
-9. [Claude] Automated tests: expired token → `401`; every vehicle endpoint refuses an anonymous caller; login throttle resets after the wait.
-   **Expect:** all pass locally; CI green on the pushed branch.
-    ✅ local: backend 33/33 (8 new auth tests), frontend 4/4 (new `frontend_test` gate check, verified with a planted failure). CI: checked after push.
-10. [Claude] `JWT_SECRET` unset → warning in the log that tokens won't survive a restart; set → no warning. Neither value ever printed.
-    ✅ warning "JWT_SECRET is not set: using a random signing key…" present; generated password printed exactly once.
-## Public pages (headless screenshots of a release build)
+## Pages and code
 
-11. [Claude] `/` at desktop (1440px) and phone (400px) width
-    **Expect:** landing page to DESIGN.md: navy hero, large number plate, "Sign in" button, no horizontal scroll at 400px. Fonts are Archivo / Public Sans / Barlow Condensed, not a fallback.
-    ❌ blocked: headless Chrome renders the release build blank (no console errors; virtual and real-time waits both blank). Not yet localised; the app renders in real Chrome via `flutter run` (log clean). Checked by the developer in steps 15–19 instead.
-12. [Claude] `/login` at both widths
-    **Expect:** sign-in form with labelled fields and one "Sign in" button; no demo credentials shown.
-    ❌ blocked, same as step 11.
-13. [Claude] `/vehicles` while signed out, and `/no-such-page`
-    **Expect:** first lands on `/login`; second shows a not-found page with a way back home.
-    ❌ blocked, same as step 11. Redirect logic covered by frontend tests (signed-out /vehicles → /login?next=…).
-14. [Claude] `flutter analyze` no new issues; `flutter build web` succeeds.
-    ✅ `flutter analyze`: 7 issues, all pre-existing starter imports (down from 8); `flutter build web --release` built.
-## In the app (Claude leaves the backend and the app running, and gives you the admin password)
+7. [Claude] Router tests: signed out, `/vehicles/new`, `/vehicles/5`, `/vehicles/5/edit`, `/vehicles?page=2`
+   **Expect:** each goes to `/login?next=<that URL>`; after sign-in, back to the same URL including `?page=2`.
+    ✅ router test "every vehicle page goes to sign-in, keeping the full address" passes for all four URLs; the existing test covers the return trip.
+8. [Claude] Starter screens and the counter template are gone; nothing imports them; the infinite-scroll package is removed.
+   **Expect:** no references found; `flutter analyze` shows fewer issues than the committed baseline; `flutter build web` succeeds.
+    ✅ no references left; `infinite_scroll_pagination` and unused `material_ui` removed; `flutter analyze` 0 issues (baseline 7, lowered to 0); `flutter build web --release` built.
+9. [Claude] `dart run build_runner build` after adding Company to the vehicle model
+   **Expect:** generated files rebuilt, none hand-edited; a saved Company comes back from `GET /api/vehicles/{id}`.
+    ✅ build_runner wrote 8 outputs; POST with company "Walkthrough Co" → 201, GET returns it, cleanup DELETE 204.
 
-15. [You] On the landing page: watch the plate change a few times. Click **Sign in**.
-    **Expect:** the plate flips to the next vehicle every few seconds; Sign in opens the sign-in page.
-    ⏳ not reported by the developer at commit time (2026-11-21). Only the landing page top bar was reviewed; its Sign in button alignment was fixed.
-16. [You] Sign in with a wrong password, then the right one.
-    **Expect:** wrong → a red message above the form, your username still filled in; the button shows a spinner while checking. Right → you land on the vehicle list inside the new frame (navy side menu with Vehicles highlighted, Dashboard and Drivers marked "Soon", your name and Sign out at the bottom).
-    ⏳ not reported by the developer at commit time (2026-11-21). Only the landing page top bar was reviewed; its Sign in button alignment was fixed.
-17. [You] Reload the browser tab.
-    **Expect:** still signed in, same page.
-    ⏳ not reported by the developer at commit time (2026-11-21). Only the landing page top bar was reviewed; its Sign in button alignment was fixed.
-18. [You] Click **Sign out**, then type `/vehicles` in the address bar.
-    **Expect:** sign-out returns you to the landing page with a "Signed out" note; `/vehicles` sends you to sign in, and after signing in you land back on `/vehicles`.
-    ⏳ not reported by the developer at commit time (2026-11-21). Only the landing page top bar was reviewed; its Sign in button alignment was fixed.
-19. [You] Make the window phone-narrow.
-    **Expect:** side menu becomes a top bar; nothing cut off or scrolling sideways.
-    ⏳ not reported by the developer at commit time (2026-11-21). Only the landing page top bar was reviewed; its Sign in button alignment was fixed.
+## In the app (Claude leaves the backend and the app running)
+
+10. [You] Sign in. On **Vehicles**, look at the register, then click **Next ›** and **2**.
+    **Expect:** each row starts with a number plate (`DHAKA METRO-GA` over `11-1001`); status is a coloured dot plus a word. Changing page shows grey placeholder rows shaped like the register, the address bar shows `?page=2`, "Showing 11–20 of 21 vehicles" matches the rows you see. Reload: still page 2. Browser Back: page 1.
+    ✅ developer, 2026-11-21: all as expected.
+11. [You] Type `toyota` in search, then click the **Maintenance** chip. Then click **Clear search and filter** (or the **All** chip and the search's clear button).
+    **Expect:** the list narrows; the chip's count, "Showing … of N" and the page numbers all say the same N. Clearing returns to all 21 on page 1. Search for `zzzz`: an empty message with **Clear search and filter**.
+    ✅ developer, 2026-11-21: all as expected.
+12. [You] Click a row (also try Tab to a row, then Enter; then Escape).
+    **Expect:** a panel slides in from the right with the large plate, status, all facts; the address bar shows `/vehicles/<id>`; Escape or the close button closes it and the list is where you left it.
+    ✅ developer, 2026-11-21: all as expected (after fixing the panel's screen-reader setting that threw an assertion on row click).
+13. [You] Click **Register vehicle**. Pick a city and class, type `119001` in the number.
+    **Expect:** the plate preview updates as you type and the dash appears by itself (`11-9001`). Submit empty: each required field says what to fill in, next to it. Fill it in and click **Register vehicle**: the button shows a spinner and "Registering", then you're back on the list with the new row flashing pale blue and a toast "Registered DHAKA METRO-… …".
+    ✅ developer, 2026-11-21: all as expected.
+14. [You] Register another vehicle with the same plate.
+    **Expect:** under the number field: already registered, with a link that opens that vehicle. Everything you typed is still there.
+    ✅ developer, 2026-11-21: all as expected.
+15. [You] Open a vehicle, click **Edit vehicle**, change the Company, **Save changes**.
+    **Expect:** URL `/vehicles/<id>/edit`; spinner "Saving"; toast "Saved …"; the row flashes; the panel shows the new Company.
+    ✅ developer, 2026-11-21: all as expected.
+16. [You] Open a vehicle, click **Remove**. Press Enter straight away. Then click Remove again and **Remove vehicle**.
+    **Expect:** the dialog shows the plate; Enter keeps the vehicle ("Keep vehicle" is focused). Removing slides the row away, a toast says "Removed …", the counts and "Showing … of N" drop by one together.
+    ✅ developer, 2026-11-21: all as expected.
+17. [You] In Chrome DevTools → Network, set **Slow 4G**, then change page, open a row, and save an edit.
+    **Expect:** placeholder rows while the page loads, placeholders in the panel while it loads, a spinner on the save button. Nothing ever shows a blank page or a lone spinner in the middle.
+    ✅ developer, 2026-11-21: all as expected.
+18. [You] Make the window phone-narrow.
+    **Expect:** rows stack (plate on top), pagination reads "‹ Previous · Page 2 of 3 · Next ›", the form is one column, nothing scrolls sideways.
+    ✅ developer, 2026-11-21: all as expected.
