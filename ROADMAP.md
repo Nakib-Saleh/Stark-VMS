@@ -64,7 +64,7 @@ Delivers: ADR on production DB; Flutter Web on Netlify, API on Render; CORS lock
 Working assumption (agreed 2026-11-20, confirm in ADR): MySQL in production too, on a free managed MySQL host (e.g. Aiven, TiDB Cloud), to keep the local and production databases identical. Re-verify free-tier limits before choosing; Render free Postgres was rejected as it may expire. Handle Render free-tier sleep (slow first request) with a "waking up the server" state in the app and a README note.
 Demo: yes
 
-### Phase 7 — Vehicle screens in the new design · done, awaiting commit
+### Phase 7 — Vehicle screens in the new design · done
 Depends on: 4 (built right after 4, before 5 and 6)
 Delivers: vehicle list (number-plate rows, search, status filter, skeleton loading, numbered pagination with the page in the URL, replacing the starter's infinite scroll), register / edit pages with live plate preview and field-level errors (Company field in the form), detail panel, remove-with-confirmation, all to DESIGN.md with their own URLs. Starter screens and the unused counter template deleted. Before/after screenshots in the PR.
 Demo: yes

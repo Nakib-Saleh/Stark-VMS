@@ -24,7 +24,7 @@ running and gives you the admin password. (Phase 4's walkthrough: commit f806f50
     ✅ empty q → 21 (whole fleet); 101 chars → 400 "Search text must be 100 characters or fewer"; size=101 → 400.
 6. [Claude] Automated tests: anonymous caller refused on the new endpoint and parameters; search + status combine; counts agree with the list.
    **Expect:** backend and frontend suites pass locally; CI green on the pushed branch.
-    ✅ local: backend 36/36 (3 new search/count tests on real MySQL + 3 new anonymous checks), frontend 6/6. CI: runs on push.
+    ✅ local: backend 36/36 (3 new search/count tests on real MySQL + 3 new anonymous checks), frontend 6/6. CI: `quality` green on `dev` 3c7d02e (run 44868082861).
 
 ## Pages and code
 
