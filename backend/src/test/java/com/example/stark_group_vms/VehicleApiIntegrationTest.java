@@ -25,7 +25,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
- * Runs against the real MySQL (local Docker or the CI service), so it proves what the
+ * Runs against the real PostgreSQL (local Docker or the CI service), so it proves what the
  * database itself enforces, not only the service code. Test vehicles use the TEST-IT- prefix
  * and are removed after each test.
  */
@@ -82,8 +82,11 @@ class VehicleApiIntegrationTest {
         repository.saveAndFlush(first);
 
         Vehicle lowerCaseCopy = vehicle(NUMBER.toLowerCase());
+        // The message must name the index: that's how GlobalExceptionHandler turns a race into a 409.
         assertThatThrownBy(() -> repository.saveAndFlush(lowerCaseCopy))
-                .isInstanceOf(DataIntegrityViolationException.class);
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .satisfies(e -> assertThat(((DataIntegrityViolationException) e).getMostSpecificCause().getMessage())
+                        .contains("uk_vehicles_vehicle_number"));
         assertThat(repository.existsByVehicleNumberIgnoreCase(NUMBER)).isTrue();
     }
 

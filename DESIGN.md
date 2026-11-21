@@ -1,6 +1,6 @@
 # Stark VMS Design
 
-*Locked 2026-11-21 · Direction: **Number Plate** · Reference prototype: https://claude.ai/artifact/GoyQDDWuLnDdNH64Yu3qTS*
+*Locked 2026-11-21 · Direction: **Number Plate***
 
 Every screen reads tokens from this file. Never invent a colour, size, radius or duration.
 A new value means this file changed first (through `/feedback`).
@@ -119,6 +119,7 @@ No scroll-triggered reveals, no staggered card entrances, no parallax.
 | Status | coloured dot + word, no pill background |
 | Figures (dashboard) | one surface split by 1px lines; Archivo 34px numbers; no icons |
 | Detail panel | 460px right sheet; plate + status, facts grid, papers; footer: Remove (quiet, red text) + Edit vehicle |
+| Waking notice | Toast styling (`navy`, radius 4, bottom-right, floating shadow, rises 10px + fade `base`) but stays until the server answers. Shows after a request has waited 3s: `Spinner` + "Waking up the server…" (14/600 `onNavyText`) over one `onNavyMuted` 13px line. No answer: "Can't reach the server." + **Try again** (outline on navy). Above every page |
 
 ## Copy
 

@@ -28,7 +28,8 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
 /**
- * Every /api route needs a valid bearer token except signing in and CORS preflights (ADR-0005).
+ * Every /api route needs a valid bearer token except signing in, the health check and CORS
+ * preflights (ADR-0005, ADR-0008).
  * Stateless: no server session, no cookie, so no CSRF token is needed.
  */
 @Configuration
@@ -48,6 +49,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                        // Render's health check and the app's "waking up" probe; says only "up".
+                        .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(rs -> rs

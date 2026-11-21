@@ -8,7 +8,7 @@ import com.example.stark_group_vms.enums.VehicleType;
 import com.example.stark_group_vms.exception.DuplicateResourceException;
 import com.example.stark_group_vms.exception.GlobalExceptionHandler;
 import com.example.stark_group_vms.exception.InvalidRequestException;
-import java.sql.SQLIntegrityConstraintViolationException;
+import java.sql.SQLException;
 import org.springframework.dao.DataIntegrityViolationException;
 import com.example.stark_group_vms.exception.ResourceNotFoundException;
 import com.example.stark_group_vms.service.VehicleService;
@@ -231,10 +231,11 @@ class VehicleControllerTest {
 
     @Test
     void createVehicle_databaseRejectsDuplicate_returns409WithFieldError() throws Exception {
-        // Two saves raced past the service check; MySQL's unique key refused the second.
+        // Two saves raced past the service check; the database's unique index refused the second
+        // (message as PostgreSQL words it; VehicleApiIntegrationTest checks the real one).
         when(vehicleService.createVehicle(any(VehicleRequest.class))).thenThrow(new DataIntegrityViolationException(
                 "could not execute statement",
-                new SQLIntegrityConstraintViolationException("Duplicate entry 'DHA-METRO-GA-12-3456' for key 'vehicles.UK_x'")));
+                new SQLException("ERROR: duplicate key value violates unique constraint \"uk_vehicles_vehicle_number\"")));
 
         mockMvc.perform(post("/api/vehicles")
                         .contentType(MediaType.APPLICATION_JSON)

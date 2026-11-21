@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -28,10 +29,11 @@ import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
+import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
-/** Sign-in and access rules, tested as an outsider first (CLAUDE.md §6). Real MySQL. */
+/** Sign-in and access rules, tested as an outsider first. Real PostgreSQL. */
 @SpringBootTest(properties = "app.admin.seed=false")
 @AutoConfigureMockMvc
 class AuthIntegrationTest {
@@ -75,6 +77,21 @@ class AuthIntegrationTest {
         Matcher m = Pattern.compile("\"token\":\"([^\"]+)\"").matcher(json);
         assertThat(m.find()).as("login response has a token: %s", json).isTrue();
         return m.group(1);
+    }
+
+    @Test
+    void healthIsOpenToAnyoneAndSaysNothingElse() throws Exception {
+        mockMvc.perform(get("/api/health"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("{\"status\":\"up\"}", JsonCompareMode.STRICT));
+    }
+
+    @Test
+    void openingHealthOpensNoOtherPath() throws Exception {
+        for (String path : new String[] {"/api/healthz", "/api/health/details"}) {
+            mockMvc.perform(get(path)).andExpect(status().isUnauthorized());
+        }
+        mockMvc.perform(post("/api/health")).andExpect(status().isUnauthorized());
     }
 
     @Test
