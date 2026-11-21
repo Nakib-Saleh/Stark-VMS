@@ -5,6 +5,7 @@ import '../auth/auth_controller.dart';
 import '../models/page_response.dart';
 import '../models/vehicle.dart';
 import '../network/dio_client.dart';
+import '../network/server_wake.dart';
 import '../network/vehicle_api.dart';
 import '../repositories/vehicle_repository.dart';
 
@@ -14,6 +15,8 @@ final dioProvider = Provider<Dio>((ref) {
   final dio = createDioClient(
     readToken: () => ref.read(authProvider).token,
     onUnauthorized: () => ref.read(authProvider.notifier).sessionEnded(),
+    onStarted: () => ref.read(serverWakeProvider.notifier).requestStarted(),
+    onEnded: (error) => ref.read(serverWakeProvider.notifier).requestEnded(error),
   );
   ref.onDispose(dio.close);
   return dio;

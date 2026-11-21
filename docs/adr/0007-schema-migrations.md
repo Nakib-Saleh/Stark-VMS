@@ -1,6 +1,6 @@
 # ADR-0007: Manage the database schema with Flyway migrations
 
-Status: Accepted · Date: 2026-11-21
+Status: Accepted · Date: 2026-11-21 · The MySQL details (ENUM columns, `SHOW CREATE TABLE`) are superseded by ADR-0008, which moved the database to PostgreSQL
 
 ## Context
 

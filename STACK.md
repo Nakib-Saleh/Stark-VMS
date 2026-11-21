@@ -10,22 +10,22 @@
 | UI kit | shadcn_ui | 0.59.0 | Starter code |
 | Backend | Java, Spring Boot (Web MVC, Data JPA, Validation), Lombok | Java 21 · Boot 4.1.2 | Course requirement; starter code |
 | Build | Gradle wrapper | 9.8.2 | Starter code |
-| Database | MySQL | 8.4 (local Docker, CI service) | Starter code (`application.properties`) |
+| Database | PostgreSQL | 17 (local Docker, CI service, Supabase in production) | ADR-0008 (replaced the starter's MySQL) |
 | Tests | JUnit 5 + MockMvc · flutter_test | via Boot / SDK | Starter code |
-| Hosting | Netlify (web) · Render (API) | — | Course; production DB is an open ADR |
+| Hosting | Netlify (web, deployed by CI from `main`) · Render (API, Docker, from `main`) · Supabase (DB) | — | Course; ADR-0008 |
 
 ## Commands
 Run from repo root in Git Bash. PowerShell: replace `bash gradlew` with `.\gradlew.bat`.
 | Purpose | Command |
 |---|---|
 | install | `cd frontend && flutter pub get` (backend: Gradle fetches on first build) |
-| local DB | `docker start stark-mysql` (container created once at setup, localhost-only, empty root password to match starter config) |
+| local DB | `docker start stark-postgres` (Postgres 17, created once, localhost-only, `postgres` user without password; tables in schema `stark`) |
 | dev / run | `cd backend && bash gradlew bootRun` · `cd frontend && flutter run -d chrome` |
 | codegen | `cd frontend && dart run build_runner build --delete-conflicting-outputs` |
 | typecheck | `cd backend && bash gradlew compileJava compileTestJava --console=plain` |
 | lint | `cd frontend && flutter analyze` |
 | test | `cd backend && bash gradlew test --console=plain` · `cd frontend && flutter test` |
-| build | `cd backend && bash gradlew bootJar` · `cd frontend && flutter build web` |
+| build | `cd backend && bash gradlew bootJar` · `docker build -t stark-vms-api backend` · `cd frontend && flutter build web --dart-define=API_BASE_URL=<api>/api` |
 | gate | `bash scripts/quality-ratchet.sh` |
 
 ## Facts other skills read

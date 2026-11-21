@@ -51,13 +51,13 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * The database refused a write. The only unique constraint is the vehicle number, so a
-     * duplicate-key error means two saves raced past the service check. Anything else stays generic.
+     * The database refused a write. A breach of the vehicle number's unique index (named in
+     * V1__baseline.sql) means two saves raced past the service check. Anything else stays generic.
      */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, Object>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
         String cause = String.valueOf(ex.getMostSpecificCause().getMessage());
-        if (cause.contains("Duplicate entry")) {
+        if (cause.contains("uk_vehicles_vehicle_number")) {
             String message = "This vehicle number is already registered";
             return buildErrorResponse(HttpStatus.CONFLICT, message, Map.of("vehicleNumber", message));
         }

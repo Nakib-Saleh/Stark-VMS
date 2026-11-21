@@ -15,8 +15,8 @@ import java.time.LocalDateTime;
 
 /**
  * Persistence only. Input validation lives in VehicleRequest; the vehicle number's
- * uniqueness is enforced by the unique key below (case-insensitive under MySQL's default
- * utf8mb4_0900_ai_ci collation, and numbers are stored upper case anyway).
+ * uniqueness is enforced in the database by a unique index on the upper-case number
+ * (V1__baseline.sql), and numbers are stored upper case anyway.
  */
 @Getter
 @Setter

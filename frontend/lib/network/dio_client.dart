@@ -7,9 +7,13 @@ import '../config/api_config.dart';
 ///
 /// [readToken] supplies the current bearer token (null when signed out). [onUnauthorized] runs
 /// when the server refuses the token, so the app can sign out and ask the user to sign in again.
+/// [onStarted] / [onEnded] report every request to the server-waking notice (`server_wake.dart`);
+/// [onEnded] gets null when the server answered.
 Dio createDioClient({
   required String? Function() readToken,
   required void Function() onUnauthorized,
+  void Function()? onStarted,
+  void Function(DioException? error)? onEnded,
 }) {
   final dio = Dio(
     BaseOptions(
@@ -30,9 +34,15 @@ Dio createDioClient({
       if (token != null) {
         options.headers['Authorization'] = 'Bearer $token';
       }
+      onStarted?.call();
       handler.next(options);
     },
+    onResponse: (response, handler) {
+      onEnded?.call(null);
+      handler.next(response);
+    },
     onError: (error, handler) {
+      onEnded?.call(error);
       final isSignIn = error.requestOptions.path.startsWith('/auth/login');
       if (error.response?.statusCode == 401 && !isSignIn) {
         onUnauthorized();
