@@ -53,7 +53,7 @@ Delivers: ADR on session approach; Spring Security on every endpoint, hashed pas
 Working assumption (agreed 2026-11-20, confirm in ADR): own auth in Spring Security, no Clerk/Auth0/Supabase Auth (login is a graded skill on a Spring course). Bearer token in the `Authorization` header, not a cookie (Netlify and Render are different domains). Spring Security's built-in JWT support, no extra library. No public sign-up: admin seeded at setup.
 Demo: yes
 
-### Phase 5 — Schema migrations · done, awaiting commit
+### Phase 5 — Schema migrations · done
 Depends on: 4
 Delivers: Flyway replaces `ddl-auto=update` (baseline migration for current tables); ADR
 Demo: no

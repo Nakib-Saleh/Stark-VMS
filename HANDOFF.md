@@ -1,6 +1,6 @@
 # Project State
 
-*Updated: Phase 5 (schema migrations) done on `feature/schema-migrations`, not yet committed (Phase 7 shipped: 3c7d02e on `dev`, CI green) · Status: green · GitHub: https://github.com/Nakib-Saleh/Stark-VMS (public; `main`, `dev` pushed). Actions had to be enabled by hand; first CI run green on `dev` 3e2a69d. `gh` CLI not installed, so merges are local `--no-ff` until it is.*
+*Updated: Phase 5 (schema migrations) shipped: 18bc60c merged into `dev` as c1b5a97, CI green · Status: green · GitHub: https://github.com/Nakib-Saleh/Stark-VMS (public; `main`, `dev` pushed). Actions had to be enabled by hand; first CI run green on `dev` 3e2a69d. `gh` CLI not installed, so merges are local `--no-ff` until it is.*
 
 ## Completed
 - Restructured into a monorepo: `backend/` (Spring Boot), `frontend/` (Flutter Web), `docs/adr/`.
@@ -62,8 +62,7 @@
 - Instructor questions sent, no reply yet: one repo vs two; page shape. Proceeding with ADR-0001/0002.
 
 ## Next up
-1. Commit Phase 5, merge into `dev`, check CI (CI's empty MySQL proves V1 builds the schema).
-2. Then `/plan 6`, then 8. Order agreed 2026-11-21, see ROADMAP execution order.
+1. `/plan 6`, then 8. Order agreed 2026-11-21, see ROADMAP execution order.
 - Design: DESIGN.md (direction "Number Plate", prototype https://claude.ai/artifact/GoyQDDWuLnDdNH64Yu3qTS). Pages: landing `/`, `/login`, `/vehicles`, `/vehicles/new`, `/vehicles/:id`, `/vehicles/:id/edit`; A2 adds `/dashboard` (first page after sign-in), `/drivers`; documents and maintenance as tabs on vehicle detail. No sign-up, no forgot-password.
 - Phase 7 has no before/after screenshots (no PR: merged locally because `gh` isn't installed, and headless screenshots render blank). Add them when the first PR is opened.
 - Headless screenshots of the Flutter app need a release build (`flutter build web` + static server); the debug web-server stays blank.

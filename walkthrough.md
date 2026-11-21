@@ -38,4 +38,4 @@ the backend running. (Phase 7's walkthrough: commit bc1c363.)
     ✅ local DB recreated: v1 applied, 20 vehicles + admin seeded, sign-in 200 with the new password; `stark_vms_fresh` dropped.
 9. [Claude] Automated tests.
    **Expect:** backend suite passes locally (database built by the migration); CI green on the pushed branch, where MySQL starts empty, so CI proves the migration builds the schema from nothing.
-    ✅ local: backend 36/36 on the migrated database. CI: runs on push.
+    ✅ local: backend 36/36 on the migrated database. CI: `quality` green on `dev` c1b5a97 (run 44872596191), starting from an empty MySQL.
