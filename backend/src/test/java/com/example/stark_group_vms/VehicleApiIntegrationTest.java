@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -13,6 +14,8 @@ import com.example.stark_group_vms.enums.FuelType;
 import com.example.stark_group_vms.enums.VehicleStatus;
 import com.example.stark_group_vms.enums.VehicleType;
 import com.example.stark_group_vms.repository.VehicleRepository;
+import com.jayway.jsonpath.JsonPath;
+import java.time.LocalDateTime;
 import java.time.Year;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -63,6 +66,23 @@ class VehicleApiIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.vehicleNumber").value(NUMBER))
                 .andExpect(jsonPath("$.company").value("Stark Logistics"));
+    }
+
+    @Test
+    void editReplyShowsTheNewLastChangedTime() throws Exception {
+        String created = mockMvc.perform(post("/api/vehicles").contentType(MediaType.APPLICATION_JSON).content(body(NUMBER, "")))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        Number id = JsonPath.read(created, "$.id");
+        LocalDateTime createdAt = LocalDateTime.parse(JsonPath.read(created, "$.createdAt"));
+
+        String edited = mockMvc.perform(put("/api/vehicles/" + id).contentType(MediaType.APPLICATION_JSON)
+                        .content(body(NUMBER, "").replace("\"Axio\"", "\"Premio\"")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.model").value("Premio"))
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(LocalDateTime.parse(JsonPath.<String>read(edited, "$.updatedAt"))).isAfter(createdAt);
+        assertThat(LocalDateTime.parse(JsonPath.<String>read(edited, "$.createdAt"))).isEqualTo(createdAt);
     }
 
     @Test

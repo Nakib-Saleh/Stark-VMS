@@ -121,7 +121,9 @@ public class VehicleService {
         if (existing.getStatus() == null) {
             existing.setStatus(keepStatus);
         }
-        return VehicleResponse.from(vehicleRepository.save(existing));
+        // saveAndFlush: @UpdateTimestamp is set when the change is written, so the reply only shows
+        // the new "last changed" time if the write happens before the reply is built.
+        return VehicleResponse.from(vehicleRepository.saveAndFlush(existing));
     }
 
     @Transactional

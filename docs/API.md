@@ -1,8 +1,8 @@
 # Stark VMS API
 
-Base URL: `http://localhost:9001/api` locally, `https://<render-service>.onrender.com/api` live
-(ADR-0008). JSON in, JSON out. All timestamps are local
-date-times without zone (`2026-11-21T00:52:51.01384`).
+Base URL: `http://localhost:9001/api` locally, `https://stark-vms-api-tf5n.onrender.com/api` live
+(ADR-0008). JSON in, JSON out. All timestamps are Dhaka local date-times without zone
+(`2026-11-21T00:52:51.01384`); the live server runs on Asia/Dhaka time.
 
 Browsers may only call the API from the origins in `CORS_ALLOWED_ORIGINS` (ADR-0004).
 Every endpoint except sign-in and the health check needs `Authorization: Bearer <token>` (ADR-0005). Without a valid
