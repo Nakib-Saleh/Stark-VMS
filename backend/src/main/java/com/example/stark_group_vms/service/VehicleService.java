@@ -16,6 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Year;
+import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.Locale;
 import java.util.Map;
 
@@ -31,8 +33,11 @@ public class VehicleService {
         this.vehicleRepository = vehicleRepository;
     }
 
+    /** Longest search text accepted. */
+    public static final int MAX_QUERY_LENGTH = 100;
+
     @Transactional(readOnly = true)
-    public Page<VehicleResponse> getVehicles(int page, int size) {
+    public Page<VehicleResponse> getVehicles(int page, int size, String q, String status) {
         if (page < 0) {
             throw new InvalidRequestException("Page number can't be negative");
         }
@@ -40,7 +45,49 @@ public class VehicleService {
             throw new InvalidRequestException("Page size must be between 1 and " + MAX_PAGE_SIZE);
         }
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
-        return vehicleRepository.findAll(pageable).map(VehicleResponse::from);
+        return vehicleRepository.search(likePattern(q), parseStatus(status), pageable).map(VehicleResponse::from);
+    }
+
+    /** How many vehicles matching {@code q} are in each status; every status is present, zero included. */
+    @Transactional(readOnly = true)
+    public Map<VehicleStatus, Long> countByStatus(String q) {
+        Map<VehicleStatus, Long> counts = new EnumMap<>(VehicleStatus.class);
+        for (VehicleStatus s : VehicleStatus.values()) {
+            counts.put(s, 0L);
+        }
+        for (Object[] row : vehicleRepository.countByStatus(likePattern(q))) {
+            if (row[0] != null) {
+                counts.put((VehicleStatus) row[0], (Long) row[1]);
+            }
+        }
+        return counts;
+    }
+
+    /** Null for no filter; otherwise a lower-case "contains" pattern with LIKE wildcards escaped. */
+    private static String likePattern(String q) {
+        if (q == null || q.isBlank()) {
+            return null;
+        }
+        String text = q.trim();
+        if (text.length() > MAX_QUERY_LENGTH) {
+            String message = "Search text must be " + MAX_QUERY_LENGTH + " characters or fewer";
+            throw new InvalidRequestException(message, Map.of("q", message));
+        }
+        String escaped = text.toLowerCase(Locale.ROOT)
+                .replace("!", "!!").replace("%", "!%").replace("_", "!_");
+        return "%" + escaped + "%";
+    }
+
+    private static VehicleStatus parseStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+        try {
+            return VehicleStatus.valueOf(status.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            String message = "Status must be one of " + Arrays.toString(VehicleStatus.values());
+            throw new InvalidRequestException(message, Map.of("status", message));
+        }
     }
 
     @Transactional(readOnly = true)

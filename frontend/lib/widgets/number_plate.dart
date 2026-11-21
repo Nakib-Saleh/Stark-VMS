@@ -8,12 +8,24 @@ enum PlateSize { sm, lg, xl }
 /// `DHA-METRO-GA-11-9001` reads as `DHAKA METRO-GA` over `11-9001`. Anything that doesn't
 /// match that shape is shown as one line, so a plate is never hidden.
 class NumberPlate extends StatelessWidget {
-  const NumberPlate(this.vehicleNumber, {super.key, this.size = PlateSize.sm});
+  const NumberPlate(this.vehicleNumber, {super.key, this.size = PlateSize.sm}) : _parts = null;
+
+  /// A plate drawn from its two lines as typed (the form's live preview), even when incomplete.
+  const NumberPlate.preview({super.key, required String top, required String number, this.size = PlateSize.lg})
+      : vehicleNumber = '',
+        _parts = (top, number);
 
   final String vehicleNumber;
   final PlateSize size;
+  final (String, String)? _parts;
 
-  static const _cities = {
+  /// The plate as words for messages and screen readers: `DHAKA METRO-GA 11-9001`.
+  static String spoken(String raw) {
+    final p = split(raw);
+    return p == null ? raw : '${p.$1} ${p.$2}';
+  }
+
+  static const cities = {
     'DHA': 'DHAKA',
     'CTG': 'CHATTA',
     'SYL': 'SYLHET',
@@ -28,13 +40,13 @@ class NumberPlate extends StatelessWidget {
   static (String, String)? split(String raw) {
     final m = RegExp(r'^([A-Z]+)-METRO-([A-Z]+)-(\d{2}-\d{4})$').firstMatch(raw.trim().toUpperCase());
     if (m == null) return null;
-    final city = _cities[m.group(1)] ?? m.group(1)!;
+    final city = cities[m.group(1)] ?? m.group(1)!;
     return ('$city METRO-${m.group(2)}', m.group(3)!);
   }
 
   @override
   Widget build(BuildContext context) {
-    final parts = split(vehicleNumber);
+    final parts = _parts ?? split(vehicleNumber);
     final (topSize, numSize, border, radius, pad) = switch (size) {
       PlateSize.sm => (10.0, 19.0, 1.5, StarkRadius.plate, const EdgeInsets.fromLTRB(9, 2, 9, 3)),
       PlateSize.lg => (13.0, 32.0, 2.0, StarkRadius.plate, const EdgeInsets.fromLTRB(16, 6, 16, 8)),

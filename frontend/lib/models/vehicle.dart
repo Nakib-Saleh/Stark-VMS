@@ -34,7 +34,7 @@ enum FuelType {
 @JsonEnum(fieldRename: FieldRename.screamingSnake)
 enum VehicleStatus {
   available('Available'),
-  inUse('In Use'),
+  inUse('In use'),
   maintenance('Maintenance'),
   inactive('Inactive');
 
@@ -48,6 +48,7 @@ class Vehicle {
     this.id,
     required this.vehicleNumber,
     required this.vehicleType,
+    this.company,
     required this.brand,
     required this.model,
     this.manufacturingYear,
@@ -64,6 +65,7 @@ class Vehicle {
   final int? id;
   final String vehicleNumber;
   final VehicleType vehicleType;
+  final String? company;
   final String brand;
   final String model;
   final int? manufacturingYear;
@@ -80,38 +82,4 @@ class Vehicle {
       _$VehicleFromJson(json);
 
   Map<String, dynamic> toJson() => _$VehicleToJson(this);
-
-  Vehicle copyWith({
-    int? id,
-    String? vehicleNumber,
-    VehicleType? vehicleType,
-    String? brand,
-    String? model,
-    int? manufacturingYear,
-    String? color,
-    FuelType? fuelType,
-    int? seatingCapacity,
-    String? driverName,
-    String? driverPhone,
-    VehicleStatus? status,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-  }) {
-    return Vehicle(
-      id: id ?? this.id,
-      vehicleNumber: vehicleNumber ?? this.vehicleNumber,
-      vehicleType: vehicleType ?? this.vehicleType,
-      brand: brand ?? this.brand,
-      model: model ?? this.model,
-      manufacturingYear: manufacturingYear ?? this.manufacturingYear,
-      color: color ?? this.color,
-      fuelType: fuelType ?? this.fuelType,
-      seatingCapacity: seatingCapacity ?? this.seatingCapacity,
-      driverName: driverName ?? this.driverName,
-      driverPhone: driverPhone ?? this.driverPhone,
-      status: status ?? this.status,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-    );
-  }
 }

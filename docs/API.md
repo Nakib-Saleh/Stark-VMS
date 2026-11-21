@@ -36,7 +36,8 @@ Signing out is done by the client forgetting the token.
 
 | Method | Path | Success | Errors |
 |---|---|---|---|
-| `GET` | `/vehicles?page=0&size=10` | `200` page of vehicles, newest first | `400` bad `page`/`size` |
+| `GET` | `/vehicles?page=0&size=10&q=&status=` | `200` page of vehicles, newest first | `400` bad `page`/`size`/`q`/`status` |
+| `GET` | `/vehicles/status-counts?q=` | `200` vehicles per status, e.g. `{"AVAILABLE": 13, "IN_USE": 5, "MAINTENANCE": 2, "INACTIVE": 1}` (every status present, `0` included) | `400` bad `q` |
 | `GET` | `/vehicles/{id}` | `200` vehicle | `404` |
 | `POST` | `/vehicles` | `201` created vehicle | `400` validation, `409` duplicate number |
 | `PUT` | `/vehicles/{id}` | `200` updated vehicle | `400`, `404`, `409` |
@@ -48,6 +49,10 @@ Signing out is done by the client forgetting the token.
 |---|---|---|
 | `page` | `0` | Zero-based, `0` or more. A page past the end returns `200` with empty `content`. |
 | `size` | `10` | `1` to `100`. |
+| `q` | none | Optional search text, up to 100 characters. Matches vehicles whose number, brand, model, company or driver name contains it, ignoring case. `%` and `_` are plain characters. Empty means no search. |
+| `status` | none | Optional: `AVAILABLE`, `IN_USE`, `MAINTENANCE` or `INACTIVE` (any case). Anything else is `400` with `errors.status`. |
+
+`q` and `status` combine. `status-counts` takes the same `q`, so its numbers add up to `totalElements` of the list with that `q` and no `status`.
 
 ## Page shape
 

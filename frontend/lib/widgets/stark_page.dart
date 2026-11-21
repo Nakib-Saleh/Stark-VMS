@@ -20,6 +20,9 @@ class StarkPage extends StatelessWidget {
       );
 }
 
+/// A DESIGN.md motion duration, or zero when the OS asks for reduced motion.
+Duration motion(BuildContext context, Duration d) => MediaQuery.disableAnimationsOf(context) ? Duration.zero : d;
+
 /// Small spinner for buttons that are busy ("Signing in").
 class Spinner extends StatefulWidget {
   const Spinner({super.key, this.size = 14, this.color = StarkColors.paper});

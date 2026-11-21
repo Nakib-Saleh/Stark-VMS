@@ -13,6 +13,9 @@ PageResponse<T> _$PageResponseFromJson<T>(
   content: (json['content'] as List<dynamic>).map(fromJsonT).toList(),
   hasNext: json['hasNext'] as bool,
   totalElements: (json['totalElements'] as num).toInt(),
+  number: (json['number'] as num?)?.toInt() ?? 0,
+  size: (json['size'] as num?)?.toInt() ?? 10,
+  totalPages: (json['totalPages'] as num?)?.toInt() ?? 0,
 );
 
 Map<String, dynamic> _$PageResponseToJson<T>(
@@ -22,4 +25,7 @@ Map<String, dynamic> _$PageResponseToJson<T>(
   'content': instance.content.map(toJsonT).toList(),
   'hasNext': instance.hasNext,
   'totalElements': instance.totalElements,
+  'number': instance.number,
+  'size': instance.size,
+  'totalPages': instance.totalPages,
 };

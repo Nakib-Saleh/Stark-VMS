@@ -8,6 +8,7 @@ import '../auth/auth_controller.dart';
 import '../theme/stark_tokens.dart';
 import '../widgets/stark_page.dart';
 import '../widgets/brand.dart';
+import '../widgets/labeled_field.dart';
 import '../widgets/number_plate.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -95,7 +96,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   _Banner(text: _error!, tone: _Tone.error),
                   const SizedBox(height: 16),
                 ],
-                _Field(
+                LabeledField(
                   label: 'Username',
                   error: _usernameError,
                   child: ShadInput(
@@ -112,7 +113,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                _Field(
+                LabeledField(
                   label: 'Password',
                   error: _passwordError,
                   child: ShadInput(
@@ -200,30 +201,6 @@ class _NavySide extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _Field extends StatelessWidget {
-  const _Field({required this.label, required this.child, this.error});
-
-  final String label;
-  final Widget child;
-  final String? error;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: StarkText.body(14, weight: FontWeight.w600, color: StarkColors.ink)),
-        const SizedBox(height: 6),
-        child,
-        if (error != null) ...[
-          const SizedBox(height: 6),
-          Text(error!, style: StarkText.body(13, weight: FontWeight.w500, color: StarkColors.red)),
-        ],
-      ],
     );
   }
 }

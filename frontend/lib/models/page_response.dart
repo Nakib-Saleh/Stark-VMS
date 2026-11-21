@@ -8,11 +8,19 @@ class PageResponse<T> {
     required this.content,
     required this.hasNext,
     required this.totalElements,
+    this.number = 0,
+    this.size = 10,
+    this.totalPages = 0,
   });
 
   final List<T> content;
   final bool hasNext;
   final int totalElements;
+
+  /// Zero-based page index, as the server counts (docs/API.md).
+  final int number;
+  final int size;
+  final int totalPages;
 
   bool get last => !hasNext;
 

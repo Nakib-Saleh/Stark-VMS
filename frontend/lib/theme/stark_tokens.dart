@@ -29,6 +29,7 @@ abstract final class StarkColors {
   static const ghostBorderOnNavy = Color(0xFF3A5582);
   static const errorTint = Color(0xFFFDF1F0);
   static const errorBorder = Color(0xFFF0C9C6);
+  static const registerHead = Color(0xFFF8F9FB); // DESIGN.md Components: Register header row
 }
 
 abstract final class StarkFonts {
