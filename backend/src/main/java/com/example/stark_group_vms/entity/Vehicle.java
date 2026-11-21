@@ -4,10 +4,6 @@ import com.example.stark_group_vms.enums.FuelType;
 import com.example.stark_group_vms.enums.VehicleStatus;
 import com.example.stark_group_vms.enums.VehicleType;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,6 +13,11 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
+/**
+ * Persistence only. Input validation lives in VehicleRequest; the vehicle number's
+ * uniqueness is enforced in the database by a unique index on the upper-case number
+ * (V1__baseline.sql), and numbers are stored upper case anyway.
+ */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -28,41 +29,36 @@ public class Vehicle {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Vehicle number is required")
     @Column(nullable = false, unique = true)
     private String vehicleNumber;
 
-    @NotNull(message = "Vehicle type is required")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private VehicleType vehicleType;
 
-    @NotBlank(message = "Brand is required")
+    @Column(length = 100)
+    private String company;
+
     @Column(nullable = false)
     private String brand;
 
-    @NotBlank(message = "Model is required")
     @Column(nullable = false)
     private String model;
 
-    @Min(value = 1900, message = "Manufacturing year must be at least 1900")
     private Integer manufacturingYear;
 
     private String color;
 
-    @NotNull(message = "Fuel type is required")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private FuelType fuelType;
 
-    @Positive(message = "Seating capacity must be greater than 0")
     private Integer seatingCapacity;
 
     private String driverName;
 
     private String driverPhone;
 
-    @NotNull(message = "Status is required")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private VehicleStatus status = VehicleStatus.AVAILABLE;

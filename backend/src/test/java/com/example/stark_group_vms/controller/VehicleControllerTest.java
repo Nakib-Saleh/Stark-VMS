@@ -1,12 +1,15 @@
 package com.example.stark_group_vms.controller;
 
 import com.example.stark_group_vms.dto.VehicleResponse;
-import com.example.stark_group_vms.entity.Vehicle;
+import com.example.stark_group_vms.dto.VehicleRequest;
 import com.example.stark_group_vms.enums.FuelType;
 import com.example.stark_group_vms.enums.VehicleStatus;
 import com.example.stark_group_vms.enums.VehicleType;
 import com.example.stark_group_vms.exception.DuplicateResourceException;
 import com.example.stark_group_vms.exception.GlobalExceptionHandler;
+import com.example.stark_group_vms.exception.InvalidRequestException;
+import java.sql.SQLException;
+import org.springframework.dao.DataIntegrityViolationException;
 import com.example.stark_group_vms.exception.ResourceNotFoundException;
 import com.example.stark_group_vms.service.VehicleService;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,6 +55,7 @@ class VehicleControllerTest {
                 1L,
                 "DHA-METRO-GA-12-3456",
                 VehicleType.CAR,
+                "Stark Logistics",
                 "Toyota",
                 "Corolla",
                 2023,
@@ -69,17 +73,22 @@ class VehicleControllerTest {
     @Test
     void getVehicles_returnsPagedResponseJson() throws Exception {
         VehicleResponse v = sampleVehicleResponse();
-        Page<VehicleResponse> page = new PageImpl<>(List.of(v), PageRequest.of(0, 10), 1);
-        when(vehicleService.getVehicles(0, 10)).thenReturn(page);
+        // Page 1 of size 1 out of 3 vehicles: a middle page, so last and hasNext are both meaningful.
+        Page<VehicleResponse> page = new PageImpl<>(List.of(v), PageRequest.of(1, 1), 3);
+        when(vehicleService.getVehicles(1, 1, null, null)).thenReturn(page);
 
         mockMvc.perform(get("/api/vehicles")
-                        .param("page", "0")
-                        .param("size", "10"))
+                        .param("page", "1")
+                        .param("size", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].id").value(1))
                 .andExpect(jsonPath("$.content[0].vehicleNumber").value("DHA-METRO-GA-12-3456"))
-                .andExpect(jsonPath("$.hasNext").value(false))
-                .andExpect(jsonPath("$.totalElements").value(1));
+                .andExpect(jsonPath("$.number").value(1))
+                .andExpect(jsonPath("$.size").value(1))
+                .andExpect(jsonPath("$.totalElements").value(3))
+                .andExpect(jsonPath("$.totalPages").value(3))
+                .andExpect(jsonPath("$.last").value(false))
+                .andExpect(jsonPath("$.hasNext").value(true));
     }
 
     @Test
@@ -104,7 +113,7 @@ class VehicleControllerTest {
 
     @Test
     void createVehicle_valid_returns201() throws Exception {
-        when(vehicleService.createVehicle(any(Vehicle.class))).thenReturn(sampleVehicleResponse());
+        when(vehicleService.createVehicle(any(VehicleRequest.class))).thenReturn(sampleVehicleResponse());
 
         String payload = """
                 {
@@ -132,7 +141,7 @@ class VehicleControllerTest {
 
     @Test
     void createVehicle_duplicateNumber_returns409() throws Exception {
-        when(vehicleService.createVehicle(any(Vehicle.class)))
+        when(vehicleService.createVehicle(any(VehicleRequest.class)))
                 .thenThrow(new DuplicateResourceException("Vehicle with number 'DHA-METRO-GA-12-3456' already exists"));
 
         String payload = """
@@ -179,6 +188,7 @@ class VehicleControllerTest {
                 1L,
                 "DHA-METRO-GA-12-3456",
                 VehicleType.CAR,
+                "Stark Logistics",
                 "Toyota",
                 "Corolla",
                 2023,
@@ -191,7 +201,7 @@ class VehicleControllerTest {
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
-        when(vehicleService.updateVehicle(eq(1L), any(Vehicle.class))).thenReturn(updated);
+        when(vehicleService.updateVehicle(eq(1L), any(VehicleRequest.class))).thenReturn(updated);
 
         String payload = """
                 {
@@ -217,5 +227,33 @@ class VehicleControllerTest {
 
         mockMvc.perform(delete("/api/vehicles/1"))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void createVehicle_databaseRejectsDuplicate_returns409WithFieldError() throws Exception {
+        // Two saves raced past the service check; the database's unique index refused the second
+        // (message as PostgreSQL words it; VehicleApiIntegrationTest checks the real one).
+        when(vehicleService.createVehicle(any(VehicleRequest.class))).thenThrow(new DataIntegrityViolationException(
+                "could not execute statement",
+                new SQLException("ERROR: duplicate key value violates unique constraint \"uk_vehicles_vehicle_number\"")));
+
+        mockMvc.perform(post("/api/vehicles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"vehicleNumber": "DHA-METRO-GA-12-3456", "vehicleType": "CAR",
+                                 "brand": "Toyota", "model": "Corolla", "fuelType": "HYBRID"}
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.errors.vehicleNumber").value("This vehicle number is already registered"));
+    }
+
+    @Test
+    void getVehicles_sizeOverCap_returns400WithReason() throws Exception {
+        when(vehicleService.getVehicles(0, 101, null, null))
+                .thenThrow(new InvalidRequestException("Page size must be between 1 and 100"));
+
+        mockMvc.perform(get("/api/vehicles").param("size", "101"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Page size must be between 1 and 100"));
     }
 }

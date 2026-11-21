@@ -1,6 +1,10 @@
 package com.example.stark_group_vms.exception;
 
+import com.example.stark_group_vms.auth.TooManyAttemptsException;
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,14 +23,50 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(DuplicateResourceException.class)
-    public ResponseEntity<Map<String, Object>> handleDuplicateResource(DuplicateResourceException ex) {
-        return buildErrorResponse(HttpStatus.CONFLICT, ex.getMessage(), null);
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<Map<String, Object>> handleBadCredentials(BadCredentialsException ex) {
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), null);
     }
 
+    /** Missing, malformed, tampered or expired token. Deliberately vague: the client just signs in again. */
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<Map<String, Object>> handleUnauthenticated(AuthenticationException ex) {
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Sign in to continue", null);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex) {
+        return buildErrorResponse(HttpStatus.FORBIDDEN, "You don't have permission to do that", null);
+    }
+
+    @ExceptionHandler(TooManyAttemptsException.class)
+    public ResponseEntity<Map<String, Object>> handleTooManyAttempts(TooManyAttemptsException ex) {
+        return buildErrorResponse(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage(), null);
+    }
+
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<Map<String, Object>> handleDuplicateResource(DuplicateResourceException ex) {
+        Map<String, String> errors = ex.getField() == null ? null : Map.of(ex.getField(), ex.getMessage());
+        return buildErrorResponse(HttpStatus.CONFLICT, ex.getMessage(), errors);
+    }
+
+    /**
+     * The database refused a write. A breach of the vehicle number's unique index (named in
+     * V1__baseline.sql) means two saves raced past the service check. Anything else stays generic.
+     */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, Object>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
-        return buildErrorResponse(HttpStatus.CONFLICT, "Duplicate vehicle number or data integrity violation", null);
+        String cause = String.valueOf(ex.getMostSpecificCause().getMessage());
+        if (cause.contains("uk_vehicles_vehicle_number")) {
+            String message = "This vehicle number is already registered";
+            return buildErrorResponse(HttpStatus.CONFLICT, message, Map.of("vehicleNumber", message));
+        }
+        return buildErrorResponse(HttpStatus.CONFLICT, "The change conflicts with existing data", null);
+    }
+
+    @ExceptionHandler(InvalidRequestException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidRequest(InvalidRequestException ex) {
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), ex.getFieldErrors());
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)

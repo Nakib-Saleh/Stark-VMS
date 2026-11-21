@@ -30,6 +30,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_web_plugins:
+    sdk: flutter
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -39,10 +41,10 @@ dependencies:
   json_annotation: ^4.12.0
   shadcn_ui: ^0.59.0
   skeletonizer: ^3.0.0
-  infinite_scroll_pagination: ^5.1.1
   flutter_riverpod: ^3.5.0
   hive_ce: ^2.23.3
   hive_ce_flutter: ^2.5.0
+  go_router: ^18.1.4
 
 dev_dependencies:
   flutter_test:
@@ -68,6 +70,22 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # DESIGN.md type: bundled (OFL licences in assets/fonts), never fetched at runtime.
+  # Archivo and Public Sans are variable fonts: set weight/width with FontVariation (lib/theme).
+  fonts:
+    - family: Archivo
+      fonts:
+        - asset: assets/fonts/Archivo.ttf
+    - family: PublicSans
+      fonts:
+        - asset: assets/fonts/PublicSans.ttf
+    - family: BarlowCondensed
+      fonts:
+        - asset: assets/fonts/BarlowCondensed-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/BarlowCondensed-Bold.ttf
+          weight: 700
 
   # To add assets to your application, add an assets section, like this:
   # assets:

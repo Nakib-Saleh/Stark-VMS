@@ -24,9 +24,17 @@ class _VehicleApi implements VehicleApi {
   Future<PageResponse<Vehicle>> getVehicles({
     int page = 0,
     int size = 10,
+    String? q,
+    String? status,
   }) async {
     final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{r'page': page, r'size': size};
+    final queryParameters = <String, dynamic>{
+      r'page': page,
+      r'size': size,
+      r'q': q,
+      r'status': status,
+    };
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
     final _options = _setStreamType<PageResponse<Vehicle>>(
@@ -46,6 +54,34 @@ class _VehicleApi implements VehicleApi {
         _result.data!,
         (json) => Vehicle.fromJson(json as Map<String, dynamic>),
       );
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    return _value;
+  }
+
+  @override
+  Future<Map<String, int>> getStatusCounts({String? q}) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{r'q': q};
+    queryParameters.removeWhere((k, v) => v == null);
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<Map<String, int>>(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/vehicles/status-counts',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
+    late Map<String, int> _value;
+    try {
+      _value = _result.data!.cast<String, int>();
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options, response: _result);
       rethrow;

@@ -1,13 +1,14 @@
 package com.example.stark_group_vms.controller;
 
 import com.example.stark_group_vms.dto.PagedResponse;
+import com.example.stark_group_vms.dto.VehicleRequest;
 import com.example.stark_group_vms.dto.VehicleResponse;
-import com.example.stark_group_vms.entity.Vehicle;
+import com.example.stark_group_vms.enums.VehicleStatus;
 import com.example.stark_group_vms.service.VehicleService;
+import java.util.Map;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,7 +21,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/vehicles")
-@CrossOrigin(origins = "*")
 public class VehicleController {
 
     private final VehicleService vehicleService;
@@ -32,8 +32,16 @@ public class VehicleController {
     @GetMapping
     public ResponseEntity<PagedResponse<VehicleResponse>> getVehicles(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(PagedResponse.from(vehicleService.getVehicles(page, size)));
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String status) {
+        return ResponseEntity.ok(PagedResponse.from(vehicleService.getVehicles(page, size, q, status)));
+    }
+
+    /** Vehicles per status for the same {@code q} as the list, for the filter chips. */
+    @GetMapping("/status-counts")
+    public ResponseEntity<Map<VehicleStatus, Long>> getStatusCounts(@RequestParam(required = false) String q) {
+        return ResponseEntity.ok(vehicleService.countByStatus(q));
     }
 
     @GetMapping("/{id}")
@@ -42,16 +50,16 @@ public class VehicleController {
     }
 
     @PostMapping
-    public ResponseEntity<VehicleResponse> createVehicle(@Valid @RequestBody Vehicle vehicle) {
-        VehicleResponse created = vehicleService.createVehicle(vehicle);
+    public ResponseEntity<VehicleResponse> createVehicle(@Valid @RequestBody VehicleRequest request) {
+        VehicleResponse created = vehicleService.createVehicle(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<VehicleResponse> updateVehicle(
             @PathVariable Long id,
-            @Valid @RequestBody Vehicle vehicle) {
-        return ResponseEntity.ok(vehicleService.updateVehicle(id, vehicle));
+            @Valid @RequestBody VehicleRequest request) {
+        return ResponseEntity.ok(vehicleService.updateVehicle(id, request));
     }
 
     @DeleteMapping("/{id}")

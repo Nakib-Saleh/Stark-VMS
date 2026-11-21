@@ -4,16 +4,67 @@ on: [push, pull_request]
 jobs:
   gate:
     runs-on: ubuntu-latest
+
+    # The backend tests boot the full app, so they need a real PostgreSQL (ADR-0008).
+    # Matches backend/src/main/resources/application.properties (postgres user, no password, CI only).
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: stark_group_vms
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+
     steps:
       - uses: actions/checkout@v4
 
-      # ── TOOLCHAIN + INSTALL — /stack replaces this block for the chosen stack ──
-      # Node:   - uses: actions/setup-node@v4   (with: node-version: 20, cache: npm)
-      #         - run: npm ci
-      # Python: - uses: actions/setup-python@v5 (with: python-version: '3.12')
-      #         - run: pip install -r requirements.txt
-      # Go:     - uses: actions/setup-go@v5     (with: go-version-file: go.mod)
+      # ── TOOLCHAIN + INSTALL ──
+      - uses: actions/setup-java@v4
+        with:
+          distribution: microsoft
+          java-version: '21'
+          cache: gradle
+      # Pinned to the local SDK (flutter --version, 2026-11-20) so CI and the laptop analyze identically.
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.50.1'
+          cache: true
+      - run: flutter pub get
+        working-directory: frontend
       # ── END TOOLCHAIN BLOCK ──
 
       # Runs BUILD_CMD (if set), then the baseline-aware checks.
       - run: bash scripts/quality-ratchet.sh --ci
+
+  # Publishes the web app to Netlify when main changes (ADR-0003: main = what's live; ADR-0008).
+  # The API on Render deploys itself from main. Needs repo secrets NETLIFY_AUTH_TOKEN and
+  # NETLIFY_SITE_ID, and repo variable API_BASE_URL (not secret: it ships in the app anyway).
+  deploy-web:
+    needs: gate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.50.1'
+          cache: true
+      - name: Build
+        working-directory: frontend
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+        run: |
+          test -n "$API_BASE_URL" || { echo "Set the API_BASE_URL repository variable"; exit 1; }
+          flutter pub get
+          flutter build web --release --dart-define=API_BASE_URL="$API_BASE_URL"
+      - name: Publish to Netlify
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: npx --yes netlify-cli@27.16.2 deploy --prod --dir frontend/build/web --no-build

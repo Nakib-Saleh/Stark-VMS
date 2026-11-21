@@ -38,13 +38,28 @@ class VehicleRepository {
   Future<PageResponse<Vehicle>> getVehicles({
     int page = 0,
     int size = ApiConfig.defaultPageSize,
+    String? q,
+    VehicleStatus? status,
   }) async {
     try {
-      return await _api.getVehicles(page: page, size: size);
+      return await _api.getVehicles(page: page, size: size, q: q, status: status == null ? null : _statusName(status));
     } on DioException catch (e) {
       throw _mapDioError(e);
     }
   }
+
+  /// How many vehicles matching [q] are in each status; a status the server leaves out counts 0.
+  Future<Map<VehicleStatus, int>> getStatusCounts({String? q}) async {
+    try {
+      final raw = await _api.getStatusCounts(q: q);
+      return {for (final s in VehicleStatus.values) s: raw[_statusName(s)] ?? 0};
+    } on DioException catch (e) {
+      throw _mapDioError(e);
+    }
+  }
+
+  /// The API's name for a status (IN_USE), from the enum's JSON mapping.
+  static String _statusName(VehicleStatus s) => s.name.replaceAllMapped(RegExp('[A-Z]'), (m) => '_${m[0]}').toUpperCase();
 
   Future<Vehicle> getVehicleById(int id) async {
     try {
